@@ -1,4 +1,4 @@
-# V PIM-  IV
+# PIM-  IV
 Plataforma web para realização de avaliações, permitindo que alunos respondam avaliações, professores criem e corrijam provas, e administradores e moderadores gerenciem o sistema.
 
 ## Sobre o Projeto
