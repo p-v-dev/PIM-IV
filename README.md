@@ -14,7 +14,20 @@ Esta plataforma tem como objetivo centralizar o processo de avaliação acadêmi
 
 
 ## Stack
-- C# -> backend
+- NestJS/TypeScript -> backend
 - Vite -> webapp
 - React Native -> mobile
 - SQL Server -> DB
+
+## Backend
+
+O backend está em `apps/server`.
+
+```bash
+cd apps/server
+cp .env.example .env
+npm ci
+npm run start:dev
+```
+
+A API estará disponível em `http://localhost:3000` e a documentação Swagger em `http://localhost:3000/api`.
