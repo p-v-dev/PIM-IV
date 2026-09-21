@@ -1,6 +1,7 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, PrimaryColumn } from 'typeorm';
 
 @Entity('attempts')
+@Index(['studentId', 'examId'], { unique: true })
 export class Attempt {
   @PrimaryColumn('uuid') id: string;
   @Column('uuid') studentId: string;
