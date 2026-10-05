@@ -34,17 +34,17 @@
 
 ### Task 2: Implementar cliente da API
 
-- [ ] Criar modelos: `LoginResponse`, `User`, `CreateUserRequest` e `UpdateUserRequest`.
-- [ ] Criar `AdminApiClient` com:
+- [x] Criar modelos: `LoginResponse`, `User`, `CreateUserRequest` e `UpdateUserRequest`.
+- [x] Criar `AdminApiClient` com:
   - `LoginAsync(email, password)`
   - `GetUsersAsync()`
   - `CreateUserAsync(request)`
   - `UpdateUserAsync(id, request)`
   - `DeactivateUserAsync(id)`
-- [ ] Anexar o token em `Authorization: Bearer` nas rotas protegidas.
-- [ ] Converter erros HTTP em uma exceção simples com mensagem exibível.
-- [ ] Criar testes com `HttpMessageHandler` falso para login, envio do token e erros `401`.
-- [ ] Executar `dotnet test`.
+- [x] Anexar o token em `Authorization: Bearer` nas rotas protegidas.
+- [x] Converter erros HTTP em uma exceção simples com mensagem exibível.
+- [x] Criar testes com `HttpMessageHandler` falso para login, envio do token e erros `401`.
+- [x] Executar `dotnet test`.
 
 ### Task 3: Implementar login e sessão
 
