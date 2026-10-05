@@ -1,5 +1,6 @@
+import StudentHome from "./pages/student/StudentHome";
 function App() {
-  return null;
+  return <StudentHome />;
 }
 
 export default App;
