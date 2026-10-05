@@ -1,16 +1,23 @@
+using EduQuest.Admin.Desktop.Configuration;
+using EduQuest.Admin.Desktop.Networking;
+using EduQuest.Admin.Desktop.Session;
+
 namespace EduQuest.Admin.Desktop;
 
 static class Program
 {
-    /// <summary>
-    ///  The main entry point for the application.
-    /// </summary>
     [STAThread]
     static void Main()
     {
-        // To customize application configuration such as set high DPI settings or default font,
-        // see https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
-        Application.Run(new MainForm());
-    }    
+
+        using var httpClient = new HttpClient();
+        var session = new UserSession();
+        var apiClient = new AdminApiClient(
+            httpClient,
+            ApiSettings.GetApiUrl(),
+            () => session.AccessToken);
+
+        Application.Run(new LoginForm(apiClient, session));
+    }
 }

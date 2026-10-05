@@ -48,11 +48,11 @@
 
 ### Task 3: Implementar login e sessão
 
-- [ ] Criar `LoginForm` com e-mail, senha, botão entrar e mensagem de erro.
-- [ ] Bloquear o envio quando e-mail ou senha estiverem vazios.
-- [ ] Armazenar o JWT somente em `UserSession`, em memória.
-- [ ] Abrir a tela principal somente após `POST /auth/login` bem-sucedido.
-- [ ] Informar erro simples para credenciais inválidas ou API indisponível.
+- [x] Criar `LoginForm` com e-mail, senha, botão entrar e mensagem de erro.
+- [x] Bloquear o envio quando e-mail ou senha estiverem vazios.
+- [x] Armazenar o JWT somente em `UserSession`, em memória.
+- [x] Abrir a tela principal somente após `POST /auth/login` bem-sucedido.
+- [x] Informar erro simples para credenciais inválidas ou API indisponível.
 - [ ] Testar manualmente contra `http://localhost:3000`.
 
 ### Task 4: Implementar gestão de usuários
