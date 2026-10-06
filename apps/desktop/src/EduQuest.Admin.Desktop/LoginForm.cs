@@ -22,6 +22,12 @@ public sealed class LoginForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
+        UiTheme.StyleForm(this);
+        UiTheme.StyleTextBox(emailTextBox);
+        UiTheme.StyleTextBox(passwordTextBox);
+        UiTheme.StyleButton(loginButton);
+        errorLabel.ForeColor = UiTheme.Error;
+        errorLabel.Font = UiTheme.CreateFont(9);
 
         var layout = new TableLayoutPanel
         {
@@ -29,13 +35,23 @@ public sealed class LoginForm : Form
             Padding = new Padding(24),
             ColumnCount = 1,
             RowCount = 5,
+            BackColor = Color.White,
+            Margin = new Padding(36),
         };
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        layout.Controls.Add(new Label { Text = "Acesso administrativo", AutoSize = true }, 0, 0);
+        var titleLabel = new Label
+        {
+            Text = "Acesso administrativo",
+            AutoSize = true,
+            ForeColor = UiTheme.Foreground,
+            Font = UiTheme.CreateFont(16, FontStyle.Bold),
+            Margin = new Padding(0, 0, 0, 10),
+        };
+        layout.Controls.Add(titleLabel, 0, 0);
         layout.Controls.Add(emailTextBox, 0, 1);
         layout.Controls.Add(passwordTextBox, 0, 2);
         layout.Controls.Add(errorLabel, 0, 3);
@@ -44,6 +60,8 @@ public sealed class LoginForm : Form
 
         AcceptButton = loginButton;
         loginButton.Click += LoginButton_Click;
+        loginButton.MouseEnter += (_, _) => loginButton.BackColor = UiTheme.PrimaryHover;
+        loginButton.MouseLeave += (_, _) => loginButton.BackColor = UiTheme.Primary;
         Shown += (_, _) => emailTextBox.Focus();
     }
 

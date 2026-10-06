@@ -21,6 +21,14 @@ public partial class MainForm : Form
         this.apiClient = apiClient;
         this.session = session;
         InitializeComponent();
+        UiTheme.StyleForm(this);
+        UiTheme.StyleGrid(usersGrid);
+        UiTheme.StyleButton(refreshButton, primary: false);
+        UiTheme.StyleButton(createButton);
+        UiTheme.StyleButton(editButton, primary: false);
+        UiTheme.StyleButton(deactivateButton, primary: false);
+        errorLabel.ForeColor = UiTheme.Error;
+        errorLabel.Font = UiTheme.CreateFont(9);
         ConfigureGrid();
         Shown += async (_, _) => await LoadUsersAsync();
         refreshButton.Click += async (_, _) => await LoadUsersAsync();

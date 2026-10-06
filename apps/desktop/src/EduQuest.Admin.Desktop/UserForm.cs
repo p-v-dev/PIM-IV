@@ -31,6 +31,15 @@ public sealed class UserForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
+        UiTheme.StyleForm(this, useBackground: false);
+        UiTheme.StyleTextBox(nameTextBox);
+        UiTheme.StyleTextBox(emailTextBox);
+        UiTheme.StyleTextBox(passwordTextBox);
+        UiTheme.StyleComboBox(roleComboBox);
+        UiTheme.StyleButton(saveButton);
+        UiTheme.StyleButton(cancelButton, primary: false);
+        errorLabel.ForeColor = UiTheme.Error;
+        errorLabel.Font = UiTheme.CreateFont(9);
 
         roleComboBox.Items.AddRange(["admin", "teacher", "student"]);
         roleComboBox.SelectedIndex = 2;
