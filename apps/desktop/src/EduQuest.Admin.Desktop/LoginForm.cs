@@ -64,8 +64,15 @@ public sealed class LoginForm : Form
             var response = await apiClient.LoginAsync(email, password);
             session.SetToken(response.AccessToken);
             Hide();
-            using var mainForm = new MainForm();
+            using var mainForm = new MainForm(apiClient, session);
             mainForm.ShowDialog(this);
+            if (session.AccessToken is null)
+            {
+                Show();
+                loginButton.Enabled = true;
+                return;
+            }
+
             Close();
         }
         catch (ApiException exception)

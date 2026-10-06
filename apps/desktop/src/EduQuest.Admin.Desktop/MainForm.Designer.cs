@@ -29,9 +29,20 @@ partial class MainForm
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
+        var toolbar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 42, Padding = new Padding(8), AutoSize = false };
+        toolbar.Controls.Add(refreshButton);
+        toolbar.Controls.Add(createButton);
+        toolbar.Controls.Add(editButton);
+        toolbar.Controls.Add(deactivateButton);
+        usersGrid.Dock = DockStyle.Fill;
+        errorLabel.Dock = DockStyle.Bottom;
+        errorLabel.Padding = new Padding(8);
+        Controls.Add(usersGrid);
+        Controls.Add(errorLabel);
+        Controls.Add(toolbar);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(800, 450);
-        Text = "EduQuest Admin";
+        ClientSize = new Size(900, 520);
+        Text = "EduQuest Admin - Usuários";
     }
 
     #endregion

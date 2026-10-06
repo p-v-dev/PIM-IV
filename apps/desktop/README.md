@@ -32,6 +32,17 @@ No credentials are stored by this project. Authentication and API operations are
 4. Confirm invalid credentials show the API error and keep the form open.
 5. Confirm valid admin credentials open the main window.
 
+## Manual user-management test
+
+After logging in as an administrator:
+
+1. Confirm users load when the main window opens.
+2. Use Atualizar and confirm the list reloads.
+3. Use Novo to create a user and confirm it appears in the list.
+4. Use Editar and confirm name, e-mail, and optional password update; role remains unchanged.
+5. Use Desativar, cancel once, then confirm and verify the row remains visible as Inativo.
+6. With an expired/invalid session, confirm a `401` or `403` returns to login.
+
 ## Verify
 
 ```powershell

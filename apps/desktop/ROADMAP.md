@@ -57,13 +57,13 @@
 
 ### Task 4: Implementar gestão de usuários
 
-- [ ] Criar `MainForm` com `DataGridView` para nome, e-mail, papel e status.
-- [ ] Carregar usuários com `GET /users` ao abrir e ao atualizar.
-- [ ] Criar `UserForm` para criação com nome, e-mail, senha e papel.
-- [ ] Reutilizar `UserForm` para edição de nome, e-mail e senha, sem alterar o papel.
-- [ ] Implementar confirmação antes de `PATCH /users/:id/deactivate`.
-- [ ] Mostrar usuários inativos na grade.
-- [ ] Ao receber `401` ou `403`, encerrar sessão e retornar ao login.
+- [x] Criar `MainForm` com `DataGridView` para nome, e-mail, papel e status.
+- [x] Carregar usuários com `GET /users` ao abrir e ao atualizar.
+- [x] Criar `UserForm` para criação com nome, e-mail, senha e papel.
+- [x] Reutilizar `UserForm` para edição de nome, e-mail e senha, sem alterar o papel.
+- [x] Implementar confirmação antes de `PATCH /users/:id/deactivate`.
+- [x] Mostrar usuários inativos na grade.
+- [x] Ao receber `401` ou `403`, encerrar sessão e retornar ao login.
 - [ ] Testar manualmente criar, editar, desativar e atualizar lista.
 
 ### Task 5: Preparar integração Azure
