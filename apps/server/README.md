@@ -1,114 +1,159 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# EduQuest API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API da plataforma EduQuest, responsável por autenticação, autorização, usuários, questões, avaliações e tentativas. A aplicação foi construída com NestJS e TypeScript e persiste os dados em SQL Server por meio do TypeORM.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Módulos
 
-## Description
+- `auth`: login, emissão e validação de JWT, guardas de autenticação e autorização por papel.
+- `users`: entidade e persistência de usuários.
+- `question`: consulta de questões para professores e seed da questão inicial.
+- `exam`: criação de avaliações por professores e consulta de avaliações futuras por alunos.
+- `attempt`: envio de respostas por alunos, validação, pontuação e ranking.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Os papéis disponíveis são `admin`, `teacher` e `student`. Contas desativadas não podem fazer login nem acessar rotas protegidas.
 
-## Project setup
+## Stack
 
-```bash
-$ npm install
+- NestJS 12 e TypeScript.
+- TypeORM com driver `mssql`.
+- SQL Server 2022.
+- JWT para autenticação e `class-validator` para validação de entrada.
+- Swagger para documentação interativa.
+- Vitest para testes unitários e end-to-end.
+- Docker Compose para executar a API com um SQL Server local.
+
+## Autenticação e autorização
+
+Faça login em `POST /auth/login`:
+
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@eduquest.local",
+  "password": "Admin123!"
+}
 ```
 
-## Compile and run the project
+A resposta contém um `accessToken`. Envie-o nas rotas protegidas:
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```http
+Authorization: Bearer <access-token>
 ```
 
-## Run tests
+As rotas usam `JwtAuthGuard` para validar o token e `RolesGuard` para restringir o acesso ao papel necessário.
 
-```bash
-# unit tests
-$ npm run test
+## Endpoints implementados
 
-# e2e tests
-$ npm run test:e2e
+| Método | Rota | Papel | Descrição |
+| --- | --- | --- | --- |
+| `POST` | `/auth/login` | público | Autentica um usuário e retorna um JWT |
+| `POST` | `/users` | `admin` | Cria um usuário |
+| `GET` | `/users` | `admin` | Lista usuários |
+| `PATCH` | `/users/:id` | `admin` | Atualiza nome, e-mail e senha |
+| `PATCH` | `/users/:id/deactivate` | `admin` | Desativa um usuário sem removê-lo |
+| `GET` | `/questions` | `teacher` | Lista as questões disponíveis |
+| `POST` | `/exams` | `teacher` | Cria uma avaliação com questões existentes |
+| `GET` | `/exams` | `student` | Lista avaliações ainda dentro do prazo |
+| `POST` | `/exams/:examId/attempts` | `student` | Envia respostas e registra a pontuação |
+| `GET` | `/leaderboard` | `teacher`, `student` | Consulta o ranking dos alunos |
 
-# test coverage
-$ npm run test:cov
+As validações de payload rejeitam campos não permitidos. O papel de um usuário não é alterado pela rota de edição. A senha não é retornada pela API e é persistida como hash.
+
+## Persistência e seed
+
+As entidades são carregadas automaticamente pelo TypeORM e incluem usuários, questões, avaliações e tentativas. Em desenvolvimento, o `synchronize` do TypeORM é habilitado pela configuração atual.
+
+Ao iniciar, os serviços de seed criam somente quando necessário:
+
+- o administrador definido por `ADMIN_NAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`;
+- a questão inicial do banco compartilhado.
+
+Não há cadastro público. Administradores criam contas de professores e alunos pela API.
+
+## Swagger
+
+Com a API em execução, a documentação interativa está disponível em:
+
+```text
+http://localhost:3000/api
 ```
 
-## Deployment
+O documento inclui autenticação Bearer e exemplos de payload para as rotas principais.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Configuração local
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Docker Compose
+
+Pré-requisitos: Docker e Docker Compose.
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+cp .env.example .env
+docker compose up --build
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Configure o `.env` com valores locais:
 
-## Observability
+```env
+DB_PASS=TesteDeve1!
+JWT_SECRET=local-development-secret
+ADMIN_NAME=Administrador
+ADMIN_EMAIL=admin@eduquest.local
+ADMIN_PASSWORD=Admin123!
+```
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+O Compose inicia a API na porta `3000` e o SQL Server na porta `1433`. O arquivo `.env` não deve conter credenciais de produção nem ser commitado.
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+### Execução direta
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+Com Node.js instalado e um SQL Server acessível pelas variáveis de ambiente:
 
-## Resources
+```bash
+npm ci
+npm run start:dev
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+Variáveis de banco usadas pela aplicação:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```env
+DB_HOST=localhost
+DB_PORT=1433
+DB_USER=sa
+DB_PASS=senha-local
+DB_NAME=eduquest-db
+JWT_SECRET=local-development-secret
+PORT=3000
+```
 
-## Support
+## Comandos
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+# Desenvolvimento
+npm run start:dev
 
-## Stay in touch
+# Produção, após o build
+npm run build
+npm run start:prod
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Qualidade
+npm run lint
 
-## License
+# Testes unitários
+npm test
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# Testes em modo observação
+npm run test:watch
+
+# Testes end-to-end
+npm run test:e2e
+
+# Cobertura
+npm run test:cov
+```
+
+Os testes unitários ficam junto aos módulos em `src/**/*.spec.ts`; o teste end-to-end fica em `test/app.e2e-spec.ts`.
+
+## Limites atuais
+
+O backend já implementa o envio de tentativas e o ranking. Ainda não há cadastro público, edição de avaliações, CRUD de questões pela API ou funcionalidades de FAQ/SAQ. A interface web e o aplicativo mobile não são necessários para executar a API e possuem estados de implementação próprios documentados nos respectivos READMEs.
