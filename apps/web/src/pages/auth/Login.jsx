@@ -1,5 +1,7 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router";
+import { login } from "../../services/authService.js";
 import {
   FiBookOpen,
   FiEye,
@@ -10,25 +12,33 @@ import {
 } from "react-icons/fi";
 
 function Login() {
-  const [perfil, setPerfil] = useState("estudante");
+  const navigate = useNavigate();
+  const [perfil, setPerfil] = useState("student");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
 
-  function handleSubmit(evento) {
+  async function handleSubmit(evento) {
     evento.preventDefault();
+    if (carregando) return;
     setErro("");
 
     if (!email.trim() || !senha.trim()) {
       setErro("Preencha seu e-mail e sua senha para continuar.");
       return;
     }
-    console.log({ email, perfil });
-
-    setErro(
-      "A autenticação ainda será conectada ao sistema. Esta tela é demonstrativa.",
-    );
+    setCarregando(true);
+    try {
+      const user = await login(email, senha, perfil);
+      setSenha("");
+      navigate(user.role === "student" ? "/aluno" : "/professor", { replace: true });
+    } catch (error) {
+      setErro(error instanceof TypeError ? "Não foi possível conectar à API. Tente novamente." : error.message);
+    } finally {
+      setCarregando(false);
+    }
   }
 
   return (
@@ -67,16 +77,13 @@ function Login() {
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-[#5f5b73]">
-            Informe seus dados para acessar sua área de estudante.
+            Informe seus dados para acessar sua área de {perfil === "student" ? "estudante" : "professor"}.
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <form onSubmit={handleSubmit} aria-busy={carregando} className="mt-8 space-y-5">
+            <fieldset disabled={carregando} className="space-y-5">
+            <legend className="sr-only">Dados de acesso</legend>
             <div>
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-semibold text-[#29263d]"
-              >
-
                 <div>
                   <p className="mb-3 text-sm font-semibold text-[#29263d]">
                     Entrar como
@@ -85,9 +92,9 @@ function Login() {
                   <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#f6f5ff] p-1.5">
                     <button
                       type="button"
-                      onClick={() => setPerfil("estudante")}
-                      aria-pressed={perfil === "estudante"}
-                      className={`rounded-lg px-3 py-3 text-sm font-semibold transition ${perfil === "estudante"
+                      onClick={() => setPerfil("student")}
+                      aria-pressed={perfil === "student"}
+                      className={`rounded-lg px-3 py-3 text-sm font-semibold transition ${perfil === "student"
                         ? "bg-[#7665e8] text-white shadow-sm"
                         : "text-[#5f5b73] hover:bg-white"
                         }`}
@@ -97,9 +104,9 @@ function Login() {
 
                     <button
                       type="button"
-                      onClick={() => setPerfil("professor")}
-                      aria-pressed={perfil === "professor"}
-                      className={`rounded-lg px-3 py-3 text-sm font-semibold transition ${perfil === "professor"
+                      onClick={() => setPerfil("teacher")}
+                      aria-pressed={perfil === "teacher"}
+                      className={`rounded-lg px-3 py-3 text-sm font-semibold transition ${perfil === "teacher"
                         ? "bg-[#7665e8] text-white shadow-sm"
                         : "text-[#5f5b73] hover:bg-white"
                         }`}
@@ -115,6 +122,7 @@ function Login() {
                   </div>
                 </div>
 
+              <label htmlFor="email" className="mb-2 block text-sm font-semibold text-[#29263d]">
                 E-mail
               </label>
 
@@ -125,6 +133,7 @@ function Login() {
                   id="email"
                   type="email"
                   autoComplete="email"
+                  required
                   value={email}
                   onChange={(evento) => setEmail(evento.target.value)}
                   placeholder="seuemail@exemplo.com"
@@ -148,6 +157,7 @@ function Login() {
                   id="senha"
                   type={mostrarSenha ? "text" : "password"}
                   autoComplete="current-password"
+                  required
                   value={senha}
                   onChange={(evento) => setSenha(evento.target.value)}
                   placeholder="Digite sua senha"
@@ -178,9 +188,10 @@ function Login() {
               type="submit"
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#7665e8] px-5 py-3.5 font-semibold text-white transition hover:bg-[#6553d5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
             >
-              Entrar
+              {carregando ? "Entrando..." : "Entrar"}
               <FiArrowRight aria-hidden="true" />
             </button>
+            </fieldset>
           </form>
 
           <p className="mt-8 text-center text-xs text-gray-400">

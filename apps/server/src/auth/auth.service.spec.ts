@@ -8,7 +8,7 @@ import { AuthService } from './auth.service.js';
 const scryptAsync = promisify(scrypt);
 
 describe('AuthService', () => {
-  const users = { create: vi.fn(), findByEmail: vi.fn() };
+  const users = { create: vi.fn(), findByEmail: vi.fn(), findById: vi.fn() };
   const jwt = { signAsync: vi.fn() };
   const service = new AuthService(
     users as unknown as UsersService,
@@ -111,5 +111,19 @@ describe('AuthService', () => {
     await expect(service.login(user.email, 'wrong-password')).rejects.toThrow(
       UnauthorizedException,
     );
+  });
+
+  it('returns the current user without the password hash', async () => {
+    users.findById.mockResolvedValue({ ...user, points: 0 });
+    const result = await service.getCurrentUser(user.id);
+    expect(result).toMatchObject({ id: user.id, name: user.name, role: 'teacher', points: 0 });
+    expect(result).not.toHaveProperty('passwordHash');
+  });
+
+  it('rejects a deleted or inactive current user', async () => {
+    users.findById.mockResolvedValue(null);
+    await expect(service.getCurrentUser(user.id)).rejects.toBeInstanceOf(UnauthorizedException);
+    users.findById.mockResolvedValue({ ...user, isActive: false });
+    await expect(service.getCurrentUser(user.id)).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

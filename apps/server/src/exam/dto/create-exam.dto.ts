@@ -1,4 +1,4 @@
-import { ArrayMinSize, IsArray, IsDateString, IsString, MinLength } from 'class-validator';
+import { ArrayMinSize, ArrayUnique, IsArray, IsDateString, IsString, IsUUID, MinLength } from 'class-validator';
 
 export class CreateExamDto {
   @IsString()
@@ -14,6 +14,7 @@ export class CreateExamDto {
 
   @IsArray()
   @ArrayMinSize(1)
-  @IsString({ each: true })
+  @ArrayUnique()
+  @IsUUID('all', { each: true })
   questionIds: string[];
 }

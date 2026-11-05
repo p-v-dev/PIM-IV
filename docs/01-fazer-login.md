@@ -1,6 +1,132 @@
 # 1. Fazer login
 
-**Ator:** administrador.
+**Atores:** administrador no desktop; aluno (`student`) e professor (`teacher`) na web.
+
+## Estado e escopo do desktop
+
+**Status:** implementado no Desktop, com uma ressalva de acesso ao frontend.
+Analise estatica do codigo em 28/10/2026; nao houve execucao do aplicativo.
+
+**O que tem:** formulario de e-mail e senha, campos obrigatorios, chamada real a
+`POST /auth/login`, verificacao de senha e usuario ativo, JWT em memoria,
+abertura da `MainForm` e tratamento de falha de conexao/credenciais.
+
+**O que falta:** nada para o administrador com credenciais validas entrar.
+Porem, qualquer perfil ativo passa pela autenticacao e chega a abrir a tela
+principal. O bloqueio de nao administradores ocorre na consulta `GET /users`,
+protegida pela API, que provoca o retorno ao login.
+
+**Como fazer com o minimo de alteracao:** se a entrada no Desktop precisar ser
+exclusiva do administrador, usar a consulta protegida `GetUsersAsync()` antes
+de abrir a `MainForm`. Em 401/403, limpar a sessao, permanecer no login e
+informar acesso nao autorizado. Nao mudar o login compartilhado da API para
+aceitar apenas administradores: ele tambem atende alunos e professores.
+Nao e necessario criar endpoint de login separado, decodificador JWT ou tabela.
+
+**Verificacao de aceite:** admin ativo entra; senha incorreta e conta inativa
+nao entram; aluno/professor nao abre a tela principal apos o ajuste proposto.
+
+### Sequencia do ajuste proposto (nao implementado)
+
+```mermaid
+sequenceDiagram
+    actor Admin as Usuario do Desktop
+    participant Tela as LoginForm
+    participant Api as AdminApiClient
+    participant Sessao as UserSession
+    participant Backend as API
+    Admin->>Tela: Informa e-mail e senha
+    Tela->>Api: LoginAsync(email, password)
+    Api->>Backend: POST /auth/login
+    Backend-->>Api: accessToken (credenciais validas)
+    Api-->>Tela: LoginResponse
+    Tela->>Sessao: SetToken(accessToken)
+    Tela->>Api: GetUsersAsync()
+    Api->>Backend: GET /users com token
+    alt Administrador autorizado
+        Backend-->>Api: HTTP 200 com usuarios
+        Api-->>Tela: Lista de usuarios
+        Tela->>Tela: Abre MainForm
+    else Perfil sem permissao ou sessao invalida
+        Backend-->>Api: HTTP 401 ou 403
+        Api-->>Tela: ApiException
+        Tela->>Sessao: Clear()
+        Tela-->>Admin: Permanece no login e informa o erro
+    end
+```
+
+## Login de aluno e professor na web
+
+Implementado em 04/11/2026, preservando o layout existente e sem alterar o
+fluxo do desktop. As contas devem ser criadas pelo administrador; o login
+nao cadastra novos usuarios.
+
+1. Usuario seleciona Estudante ou Professor e informa e-mail e senha.
+2. `Login` chama `POST /auth/login`, enviando somente e-mail e senha.
+3. Com o JWT retornado, consulta `GET /auth/me`, protegido por `JwtAuthGuard`.
+   A API verifica assinatura, expiracao, conta ativa e perfil atual.
+4. A web compara o perfil real ao selecionado e rejeita divergencias e contas
+   administrativas, sem guardar o token nesses casos.
+5. Em sucesso, guarda somente o token em `sessionStorage` e direciona o aluno
+   para `/aluno` ou o professor para `/professor`.
+6. Os loaders das rotas consultam a sessao na API antes de liberar o acesso.
+   Sem sessao, retornam a `/login`; perfil inadequado volta a sua propria area.
+7. Sair remove o token. Respostas 401/403 na verificacao de sessao tambem o
+   removem; falhas temporarias de rede/API nao apagam uma sessao existente.
+
+O navegador nao autoriza chamadas de API: os guards do backend continuam
+obrigatorios. O token sobrevive a recarga da aba; a senha nao e persistida.
+Sem refresh token ou recuperacao de senha neste escopo.
+
+```mermaid
+sequenceDiagram
+    actor Usuario as Aluno ou professor
+    participant Tela as Login
+    participant Sessao as authService
+    participant API as AuthController
+    Usuario->>Tela: Seleciona perfil e informa credenciais
+    Tela->>Sessao: login(email, password, role)
+    Sessao->>API: POST /auth/login
+    API-->>Sessao: accessToken ou erro de autenticacao
+    Sessao->>API: GET /auth/me com Bearer token
+    API-->>Sessao: Usuario ativo sem hash da senha
+    alt Perfil real corresponde ao selecionado
+        Sessao->>Sessao: Guarda token em sessionStorage
+        Sessao-->>Tela: Usuario autenticado
+        Tela-->>Usuario: Abre area do aluno ou professor
+    else Perfil diferente ou acesso nao autorizado
+        Sessao-->>Tela: Rejeita login sem guardar token
+        Tela-->>Usuario: Informa erro e permite tentar novamente
+    end
+```
+
+### Verificacao da web
+
+`npm test` em `apps/web` cobre login dos dois perfis, divergencia de perfil,
+bloqueio de administradores, credenciais invalidas, sessao rejeitada pela API,
+logout, falha de rede, indisponibilidade temporaria e protecao de rotas.
+Os testes do backend cobrem a consulta do usuario ativo sem hash de senha.
+
+Fluxos de navegador verificados com respostas simuladas da API: acesso direto
+sem sessao, login, recarga, logout, retorno pelo historico, bloqueio entre
+perfis, sessao expirada e falha de conexao, incluindo viewport movel.
+
+Validacao integrada realizada em 04/11/2026 com web, API e SQL Server no
+Docker Compose, sem simular respostas. Confirmados login dos dois perfis,
+credenciais invalidas, identidade retornada pela API, recarga da pagina,
+logout, bloqueio entre perfis, acesso anonimo e funcionamento em viewport
+movel. As chamadas passaram pelo proxy do Vite.
+
+Na API, confirmados bloqueio de JWT invalido e de JWT assinado mas expirado,
+permissoes de aluno/professor e pontuacao inicial zero. A desativacao de uma
+conta bloqueou novo login e invalidou o acesso de uma sessao ja aberta,
+retornando a tela de login e removendo o token do navegador.
+
+Foram criadas duas contas exclusivas para o teste, uma de cada perfil, e
+ambas foram desativadas ao final. Containers existentes do backend e do
+banco foram preservados; nenhum volume ou registro preexistente foi removido.
+
+## UML do estado atual do desktop
 
 Somente classes do projeto e o caminho feliz. O fluxo termina na abertura da
 tela principal, sem detalhar inicializacao, estilizacao ou consulta de usuarios.

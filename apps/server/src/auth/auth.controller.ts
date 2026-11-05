@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
@@ -13,6 +14,7 @@ import { AuthService } from './auth.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
+import type { AuthenticatedRequest } from './jwt-auth.guard.js';
 import { RolesGuard } from './roles.guard.js';
 import { Roles } from './roles.decorator.js';
 
@@ -25,6 +27,13 @@ export class AuthController {
   @ApiBody({ schema: { type: 'object' }, examples: { login: { value: { email: 'admin@eduquest.local', password: 'Admin123!' } } } })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
+  }
+
+  @Get('auth/me')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  me(@Req() request: AuthenticatedRequest) {
+    return this.authService.getCurrentUser(request.user.id);
   }
 
   @Post('users')

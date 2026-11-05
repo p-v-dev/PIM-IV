@@ -7,6 +7,7 @@ describe('UsersService', () => {
     find: vi.fn(),
     findOneBy: vi.fn(),
     save: vi.fn(),
+    update: vi.fn(),
   };
   const service = new UsersService(repository as never);
   const user: User = {
@@ -16,6 +17,7 @@ describe('UsersService', () => {
     passwordHash: 'salt:hash',
     role: 'teacher',
     isActive: true,
+    points: 0,
   };
 
   beforeEach(() => {
@@ -45,12 +47,20 @@ describe('UsersService', () => {
   });
 
   it('deactivates an existing user', async () => {
-    repository.findOneBy.mockResolvedValue(user);
-    repository.save.mockResolvedValue({ ...user, isActive: false });
+    repository.findOneBy.mockResolvedValue({ ...user, isActive: false });
 
     await expect((service as any).deactivate(user.id)).resolves.toMatchObject({
       id: user.id,
       isActive: false,
     });
+  });
+
+  it('updates only the requested fields without overwriting points earned concurrently', async () => {
+    repository.findOneBy.mockResolvedValueOnce(user)
+      .mockResolvedValueOnce({ ...user, name: 'Ana Silva', points: 10 });
+
+    await expect(service.update(user.id, { name: 'Ana Silva' })).resolves.toMatchObject({ name: 'Ana Silva', points: 10 });
+    expect(repository.update).toHaveBeenCalledWith(user.id, { name: 'Ana Silva' });
+    expect(repository.save).not.toHaveBeenCalled();
   });
 });

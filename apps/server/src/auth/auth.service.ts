@@ -36,6 +36,7 @@ export class AuthService {
       passwordHash: await this.hashPassword(password),
       role,
       isActive: true,
+      points: 0,
     });
     return this.publicUser(user);
   }
@@ -88,6 +89,14 @@ export class AuthService {
         role: user.role,
       }),
     };
+  }
+
+  async getCurrentUser(id: string) {
+    const user = await this.usersService.findById(id);
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Authentication required');
+    }
+    return this.publicUser(user);
   }
 
   private async hashPassword(password: string) {

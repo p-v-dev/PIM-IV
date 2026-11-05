@@ -1,44 +1,40 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import Navbar from "../../components/layout/Navbar";
 import WelcomeSection from "../../components/student/WelcomeSection";
 import EvaluationCard from "../../components/student/EvaluationCard";
 import Leaderboard from "../../components/student/Leaderboard";
 import { buscarAvaliacoes } from "../../services/examService";
-
-function formatarPrazo(data) {
-  if (!data) return "Não informado";
-
-  const dataValida = new Date(data);
-
-  if (Number.isNaN(dataValida.getTime())) {
-    return "Não informado";
-  }
-
-  return dataValida.toLocaleDateString("pt-BR");
-}
+import { logout } from "../../services/authService.js";
 
 function StudentHome() {
+  const navigate = useNavigate();
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
   useEffect(() => {
+    let active = true;
     async function carregarAvaliacoes() {
       try {
-        // O token será conectado ao fluxo de login quando estiver disponível.
-        const token = null;
-
-        const dados = await buscarAvaliacoes(token);
-        setAvaliacoes(dados);
+        const dados = await buscarAvaliacoes();
+        if (active) setAvaliacoes(dados);
       } catch (error) {
+        if (!active) return;
+        if (error.status === 401 || error.status === 403) {
+          logout();
+          navigate("/login", { replace: true });
+          return;
+        }
         setErro(error.message || "Não foi possível carregar as avaliações.");
       } finally {
-        setCarregando(false);
+        if (active) setCarregando(false);
       }
     }
 
     carregarAvaliacoes();
-  }, []);
+    return () => { active = false; };
+  }, [navigate]);
 
   return (
     <>
@@ -89,10 +85,7 @@ function StudentHome() {
                 {avaliacoes.map((avaliacao) => (
                   <EvaluationCard
                     key={avaliacao.id}
-                    materia={avaliacao.materia || "Avaliação"}
-                    titulo={avaliacao.title}
-                    descricao={avaliacao.description || "Sem descrição disponível."}
-                    prazo={formatarPrazo(avaliacao.deadline)}
+                    avaliacao={avaliacao}
                   />
                 ))}
               </div>

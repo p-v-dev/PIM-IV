@@ -21,4 +21,7 @@ export class User {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ type: 'int', default: 0 })
+  points: number;
 }

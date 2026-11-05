@@ -49,21 +49,27 @@ As rotas usam `JwtAuthGuard` para validar o token e `RolesGuard` para restringir
 | Método | Rota | Papel | Descrição |
 | --- | --- | --- | --- |
 | `POST` | `/auth/login` | público | Autentica um usuário e retorna um JWT |
+| `GET` | `/auth/me` | autenticado | Retorna os dados públicos da conta ativa vinculada ao JWT |
 | `POST` | `/users` | `admin` | Cria um usuário |
 | `GET` | `/users` | `admin` | Lista usuários |
 | `PATCH` | `/users/:id` | `admin` | Atualiza nome, e-mail e senha |
 | `PATCH` | `/users/:id/deactivate` | `admin` | Desativa um usuário sem removê-lo |
 | `GET` | `/questions` | `teacher` | Lista as questões disponíveis |
 | `POST` | `/exams` | `teacher` | Cria uma avaliação com questões existentes |
+| `GET` | `/exams/mine` | `teacher` | Lista somente as avaliações do professor autenticado, incluindo vencidas |
 | `GET` | `/exams` | `student` | Lista avaliações ainda dentro do prazo |
+| `GET` | `/exams/:id` | `student` | Retorna o conteúdo de uma avaliação dentro do prazo, sem gabarito |
 | `POST` | `/exams/:examId/attempts` | `student` | Envia respostas e registra a pontuação |
+| `GET` | `/attempts/me` | `student` | Consulta o próprio histórico de avaliações realizadas, incluindo vencidas |
 | `GET` | `/leaderboard` | `teacher`, `student` | Consulta o ranking dos alunos |
 
-As validações de payload rejeitam campos não permitidos. O papel de um usuário não é alterado pela rota de edição. A senha não é retornada pela API e é persistida como hash.
+As validações de payload rejeitam campos não permitidos. A criação de avaliações exige prazo futuro, título e descrição não vazios e UUIDs únicos de questões existentes; o professor proprietário é obtido do JWT, nunca do corpo. O papel de um usuário não é alterado pela rota de edição. A senha não é retornada pela API e é persistida como hash.
 
 ## Persistência e seed
 
 As entidades são carregadas automaticamente pelo TypeORM e incluem usuários, questões, avaliações e tentativas. Em desenvolvimento, o `synchronize` do TypeORM é habilitado pela configuração atual.
+
+A pontuação acumulada fica em `users.points`, com valor inicial zero, inclusive para usuários existentes quando a coluna é criada. Tentativas anteriores não são convertidas em pontos. Cada nova tentativa soma 10 pontos por acerto ao usuário na mesma transação que salva as respostas; o ranking consulta esse campo, incluindo alunos ativos com zero pontos.
 
 Ao iniciar, os serviços de seed criam somente quando necessário:
 

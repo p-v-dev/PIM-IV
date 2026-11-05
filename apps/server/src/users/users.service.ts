@@ -28,7 +28,8 @@ export class UsersService {
   async update(id: string, user: Partial<User>) {
     const existing = await this.findById(id);
     if (!existing) throw new NotFoundException('User not found');
-    return this.repository.save({ ...existing, ...user });
+    await this.repository.update(id, user);
+    return (await this.findById(id))!;
   }
 
   deactivate(id: string) {

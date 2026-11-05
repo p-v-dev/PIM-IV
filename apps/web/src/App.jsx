@@ -1,7 +1,8 @@
-import Professor from "./pages/Professor.jsx";
+import { Navigate, useLoaderData } from "react-router";
 
 function App() {
-  return <Professor />;
+  const user = useLoaderData();
+  return <Navigate to={user.role === "student" ? "/aluno" : "/professor"} replace />;
 }
 
 export default App;

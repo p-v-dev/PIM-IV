@@ -10,11 +10,12 @@ import {
   FiLogOut,
   FiUser,
 } from "react-icons/fi";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate, useRouteLoaderData } from "react-router";
+import { logout } from "../../services/authService.js";
 import ExitConfirmation from "../student/ExitConfirmation";
 
 const links = [
-  { nome: "Início", icone: FiHome, destino: "/" },
+  { nome: "Início", icone: FiHome, destino: "/aluno" },
   { nome: "Avaliações", icone: FiBookOpen, destino: "/avaliacoes" },
   { nome: "Desempenho", icone: FiBarChart2, destino: "/desempenho" },
   { nome: "FAQ", icone: FiHelpCircle, destino: "/faq" },
@@ -22,6 +23,8 @@ const links = [
 
 function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const user = useRouteLoaderData("student");
   const [menuAberto, setMenuAberto] = useState(false);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
   const [altoContraste, setAltoContraste] = useState(() =>
@@ -74,8 +77,8 @@ function Navbar() {
   function confirmarLogout() {
     setConfirmarSaida(false);
 
-    // A navegação para o login será integrada à autenticação posteriormente.
-    window.location.href = "/login";
+    logout();
+    navigate("/login", { replace: true });
   }
 
   return (
@@ -83,7 +86,7 @@ function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex min-h-[68px] items-center justify-between gap-3 py-3">
           <Link
-            to="/"
+            to="/aluno"
             className="flex shrink-0 items-center gap-2 sm:gap-3"
             aria-label="EduQuest - Página inicial"
           >
@@ -126,7 +129,8 @@ function Navbar() {
                 className="absolute right-0 top-full mt-3 w-64 rounded-2xl border border-[#e7e3ff] bg-white p-2 shadow-xl"
               >
                 <div className="border-b border-[#eeeafc] px-3 py-3">
-                  <p className="font-semibold text-[#29263d]">Minha conta</p>
+                  <p className="font-semibold text-[#29263d]">{user.name}</p>
+                  <p className="mt-1 break-all text-sm text-[#625f73]">{user.email}</p>
                   <p className="mt-1 text-sm text-[#625f73]">
                     Preferências de acessibilidade
                   </p>

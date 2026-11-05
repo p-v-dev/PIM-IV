@@ -16,21 +16,24 @@ Processos de avaliação costumam ficar fragmentados entre planilhas, formulári
 - Seed de um administrador e de uma questão inicial em ambiente configurado.
 - Consulta do banco de questões por professores.
 - Criação de avaliações por professores usando questões existentes.
+- Criação de avaliações pela web com prazo futuro e listagem persistida por professor autenticado.
 - Consulta, por alunos, de avaliações ainda dentro do prazo.
 - Envio de tentativas de avaliação, validação das respostas e cálculo de pontuação.
+- Realização de avaliações pela web com questões reais sem gabarito, correção no servidor e pontos acumulados na conta do aluno.
+- Histórico individual de avaliações realizadas, com título, data, acertos e notas, incluindo avaliações vencidas.
 - Ranking dos alunos com base nas pontuações registradas.
 - Aplicação desktop administrativa com login e gestão de usuários pela API.
 - Documentação interativa da API com Swagger.
 
 ### Parciais
 
-- A aplicação web possui uma interface de professor em desenvolvimento, mas a entrada atual ainda não a conecta a um fluxo funcional completo nem à API.
+- A aplicação web possui login real, rotas protegidas, criação/listagem do professor, realização de avaliações e histórico do aluno; consulta de tentativas pelo professor e desativação ainda não estão completamente integradas à API.
 - O aplicativo desktop possui testes automatizados para partes do cliente HTTP e da sessão; os fluxos integrados contra uma API em execução ainda dependem de validação manual.
 
 ### Planejadas
 
 - Aplicação mobile. O diretório `apps/mobile` atualmente contém apenas um arquivo preparatório vazio, portanto não há aplicativo mobile funcional neste momento.
-- Evolução das interfaces web para autenticação, consumo da API e fluxos completos de professor e aluno.
+- Evolução das interfaces web para consumo da API nos fluxos completos de professor e aluno.
 - Cadastro público, edição de avaliações e outras capacidades que não fazem parte do escopo implementado atual.
 
 ## Tecnologias
@@ -46,7 +49,7 @@ Processos de avaliação costumam ficar fragmentados entre planilhas, formulári
 
 ```mermaid
 flowchart LR
-    Web[Web React/Vite<br/>em desenvolvimento] -. consumo futuro .-> API[EduQuest API<br/>NestJS/TypeScript]
+    Web[Web React/Vite<br/>integracao parcial] --> API[EduQuest API<br/>NestJS/TypeScript]
     Desktop[EduQuest Admin<br/>WinForms/.NET 10] --> API
     Mobile[Mobile<br/>planejado] -. consumo futuro .-> API
     API --> Auth[JWT e papéis]
@@ -54,7 +57,7 @@ flowchart LR
     API --> DB[(SQL Server<br/>TypeORM)]
 ```
 
-As aplicações cliente não acessam o banco diretamente. A API concentra autenticação, autorização, validação e persistência; o aplicativo desktop já consome suas rotas administrativas, enquanto a integração web e mobile permanece em evolução.
+As aplicações cliente não acessam o banco diretamente. A API concentra autenticação, autorização, validação e persistência; o aplicativo desktop consome suas rotas administrativas e a web já integra autenticação e consulta inicial de avaliações. Os demais fluxos web e o mobile permanecem em evolução.
 
 ## Organização do repositório
 
@@ -86,7 +89,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-O arquivo `.env` deve conter os valores locais para `DB_PASS`, `JWT_SECRET`, `ADMIN_NAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Não use credenciais reais no repositório. A API ficará disponível em `http://localhost:3000` e o SQL Server em `localhost:1433`.
+O arquivo `.env` deve conter os valores locais para `DB_PASS`, `JWT_SECRET`, `ADMIN_NAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Não use credenciais reais no repositório. O Compose inicia a web em `http://localhost:5173`, a API em `http://localhost:3000` e o SQL Server em `localhost:1433`. A web usa o servidor de desenvolvimento Vite e encaminha as chamadas de API pelo proxy.
 
 ### API sem Docker
 
@@ -161,7 +164,7 @@ npm run build
 
 ## Status atual
 
-O backend possui os principais fluxos de autenticação, usuários, questões, avaliações e tentativas implementados e testados em nível unitário. A aplicação administrativa desktop já executa login e operações de usuários pela API. A interface web e a aplicação mobile ainda não representam uma experiência completa de produto: a primeira está em desenvolvimento e a segunda permanece planejada.
+O backend possui os principais fluxos de autenticação, usuários, questões, avaliações e tentativas implementados e testados em nível unitário. A aplicação administrativa desktop já executa login e operações de usuários pela API. A web possui login de aluno e professor e proteção de rotas, mas ainda não representa uma experiência completa de produto. A aplicação mobile permanece planejada.
 
 ## Documentação relacionada
 

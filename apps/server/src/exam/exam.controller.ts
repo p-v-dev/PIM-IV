@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@nestjs/common';
 import { CreateExamDto } from './dto/create-exam.dto.js';
 import { ExamService } from './exam.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -21,11 +21,27 @@ export class ExamController {
     return this.examService.create(request.user.id, dto);
   }
 
+  @Get('mine')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('teacher')
+  findMine(@Req() request: AuthenticatedRequest) {
+    return this.examService.findByTeacher(request.user.id);
+  }
+
   @Get()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('student')
   findFuture() {
     return this.examService.findFuture();
+  }
+
+  @Get(':id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('student')
+  findForStudent(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.examService.findForStudent(id);
   }
 }

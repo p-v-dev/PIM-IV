@@ -2,8 +2,6 @@
 function EvaluationCard({
   avaliacao,
   Icon,
-  onVerResultados,
-  onExcluir,
 }) {
   return (
     <article
@@ -23,48 +21,50 @@ function EvaluationCard({
             </p>
 
             <h2 className="mt-1 text-xl font-bold leading-tight">
-              {avaliacao.titulo}
+              {avaliacao.title}
             </h2>
           </div>
 
           <span className="shrink-0 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm">
-            {avaliacao.questoes} questões
+            {avaliacao.questionIds.length} questões
           </span>
         </div>
       </div>
 
       <div className="p-6">
         <p className="min-h-[48px] text-sm leading-6 text-gray-500">
-          {avaliacao.descricao}
+          {avaliacao.description}
         </p>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-[#f7f6ff] px-4 py-3">
             <div className="flex items-center gap-2 text-xs text-gray-500">
-              <Icon name="users" size={15} />
-              tentativas
+              <Icon name="clock" size={15} />
+              prazo
             </div>
 
             <p className="mt-1 font-bold">
-              {avaliacao.tentativas.length}
+              {new Date(avaliacao.deadline).toLocaleString("pt-BR")}
             </p>
           </div>
 
           <div className="rounded-xl bg-[#f7f6ff] px-4 py-3">
             <div className="flex items-center gap-2 text-xs text-gray-500">
-              <Icon name="star" size={15} />
-              dificuldade
+              <Icon name="clock" size={15} />
+              criação
             </div>
 
             <p className="mt-1 font-bold">
-              {avaliacao.dificuldade}
+              {new Date(avaliacao.createdAt).toLocaleDateString("pt-BR")}
             </p>
           </div>
         </div>
 
         <div className="mt-5 flex gap-2">
           <button
-            onClick={onVerResultados}
+            type="button"
+            disabled
+            title="Consulta de resultados pendente: caso de uso 9"
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#7665e8] px-4 py-3 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(118,101,232,0.25)] transition-all hover:-translate-y-0.5 hover:bg-[#6958dc]"
           >
             Ver resultados
@@ -72,9 +72,10 @@ function EvaluationCard({
           </button>
 
           <button
-            onClick={onExcluir}
-            aria-label={`Excluir ${avaliacao.titulo}`}
-            title="Excluir avaliação"
+            type="button"
+            disabled
+            aria-label={`Desativar ${avaliacao.title}`}
+            title="Desativação pendente: caso de uso 10"
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-500 transition-all hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-100 hover:text-red-600"
           >
             <Icon name="trash" size={18} />

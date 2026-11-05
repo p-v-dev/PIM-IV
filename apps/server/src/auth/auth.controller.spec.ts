@@ -1,5 +1,7 @@
 import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { JwtAuthGuard } from './jwt-auth.guard.js';
 
 describe('AuthController', () => {
   const auth = {
@@ -8,6 +10,7 @@ describe('AuthController', () => {
     listUsers: vi.fn(),
     updateUser: vi.fn(),
     deactivateUser: vi.fn(),
+    getCurrentUser: vi.fn(),
   };
   const controller = new AuthController(auth as unknown as AuthService);
   const registerDto = {
@@ -41,5 +44,13 @@ describe('AuthController', () => {
       accessToken: 'token',
     });
     expect(auth.login).toHaveBeenCalledWith(loginDto.email, loginDto.password);
+  });
+
+  it('returns the authenticated user from a JWT-protected endpoint', async () => {
+    const user = { id: 'student-id', name: 'Ana', role: 'student', points: 0 };
+    auth.getCurrentUser.mockResolvedValue(user);
+    await expect(controller.me({ user: { id: user.id } } as never)).resolves.toEqual(user);
+    expect(auth.getCurrentUser).toHaveBeenCalledWith(user.id);
+    expect(Reflect.getMetadata(GUARDS_METADATA, AuthController.prototype.me)).toContain(JwtAuthGuard);
   });
 });
