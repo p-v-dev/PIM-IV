@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, test } from 'node:test';
-import { buscarMinhasAvaliacoes, buscarQuestoes, criarAvaliacao, buscarAvaliacao, enviarRespostas, buscarHistorico } from './examService.js';
+import { buscarMinhasAvaliacoes, buscarQuestoes, buscarTentativas, criarAvaliacao, buscarAvaliacao, desativarAvaliacao, enviarRespostas, buscarHistorico } from './examService.js';
 
 const originalFetch = globalThis.fetch;
 const input = () => ({ title: ' Title ', description: ' Description ', deadline: new Date(Date.now() + 86400000).toISOString(), questionIds: ['question-id'] });
@@ -18,6 +18,28 @@ test('loads real questions and the current teachers exams with Bearer authentica
   assert.deepEqual(await buscarQuestoes(), []);
   assert.deepEqual(await buscarMinhasAvaliacoes(), []);
   assert.deepEqual(paths, ['/questions', '/exams/mine']);
+});
+
+test('loads attempts only for the selected exam with Bearer authentication', async () => {
+  const attempts = [{ id: 'attempt-id', studentName: 'Student', score: 3, totalQuestions: 4, createdAt: '2026-11-01T12:00:00Z' }];
+  globalThis.fetch = async (path, options) => {
+    assert.equal(path, '/exams/exam-id/attempts');
+    assert.equal(options.headers.Authorization, 'Bearer token');
+    assert.equal(options.body, undefined);
+    return Response.json(attempts);
+  };
+  assert.deepEqual(await buscarTentativas('exam-id'), attempts);
+});
+
+test('deactivates an exam using its real ID and the teacher session', async () => {
+  const inactive = { id: 'exam-id', isActive: false };
+  globalThis.fetch = async (path, options) => {
+    assert.equal(path, '/exams/exam-id/deactivate');
+    assert.equal(options.method, 'PATCH');
+    assert.equal(options.headers.Authorization, 'Bearer token');
+    return Response.json(inactive);
+  };
+  assert.deepEqual(await desativarAvaliacao('exam-id'), inactive);
 });
 
 test('sends only the API contract and uses the persisted exam returned by the server', async () => {

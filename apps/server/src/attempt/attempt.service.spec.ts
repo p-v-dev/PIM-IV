@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { QueryFailedError, getMetadataArgsStorage } from 'typeorm';
 import { AttemptService } from './attempt.service.js';
 import { Attempt } from './attempt.entity.js';
@@ -153,5 +153,37 @@ describe('AttemptService', () => {
   it('returns an empty history when the student has no attempts', async () => {
     queryBuilder.getRawMany.mockResolvedValue([]);
     await expect(service.findByStudent('new-student')).resolves.toEqual([]);
+  });
+
+  it('rejects inactive exams without saving or awarding points', async () => {
+    exams.findOneBy.mockResolvedValue({ id: 'exam', isActive: false, deadline: new Date('2099-01-01'), questionIds: ['q1'] });
+    await expect(service.submit('student', 'exam', [{ questionId: 'q1', selectedOptionIndex: 1 }])).rejects.toBeInstanceOf(BadRequestException);
+    expect(transaction).not.toHaveBeenCalled();
+    expect(manager.increment).not.toHaveBeenCalled();
+  });
+
+  it('returns attempts for an exam owned by the authenticated teacher', async () => {
+    const results = [{ id: 'attempt', examId: 'exam-id', studentId: 'student-id', studentName: 'Ana', score: 3, totalQuestions: 4, createdAt: new Date('2026-01-01') }];
+    exams.findOneBy.mockResolvedValue({ id: 'exam-id', teacherId: 'teacher-id' });
+    queryBuilder.getRawMany.mockResolvedValue(results);
+
+    await expect(service.findByExam('teacher-id', 'exam-id')).resolves.toEqual(results);
+    expect(exams.findOneBy).toHaveBeenCalledWith({ id: 'exam-id', teacherId: 'teacher-id' });
+    expect(attempts.createQueryBuilder).toHaveBeenCalledWith('attempt');
+    expect(queryBuilder.innerJoin).toHaveBeenCalledWith(User, 'student', 'student.id = attempt.studentId');
+    expect(queryBuilder.addSelect.mock.calls).toEqual([
+      ['attempt.examId', 'examId'], ['attempt.studentId', 'studentId'], ['student.name', 'studentName'],
+      ['attempt.score', 'score'], ['attempt.totalQuestions', 'totalQuestions'], ['attempt.createdAt', 'createdAt'],
+    ]);
+    expect(queryBuilder.where).toHaveBeenCalledWith('attempt.examId = :examId', { examId: 'exam-id' });
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith('attempt.createdAt', 'DESC');
+    expect(queryBuilder.addOrderBy).toHaveBeenCalledWith('attempt.id', 'DESC');
+  });
+
+  it('hides attempts from a teacher who does not own the exam', async () => {
+    exams.findOneBy.mockResolvedValue(null);
+
+    await expect(service.findByExam('other-teacher', 'exam-id')).rejects.toBeInstanceOf(NotFoundException);
+    expect(attempts.createQueryBuilder).not.toHaveBeenCalled();
   });
 });

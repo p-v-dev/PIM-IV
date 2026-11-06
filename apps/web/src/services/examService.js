@@ -45,6 +45,14 @@ export function buscarMinhasAvaliacoes(token = getToken()) {
   return request('/exams/mine', {}, token);
 }
 
+export function buscarTentativas(examId, token = getToken()) {
+  return request(`/exams/${encodeURIComponent(examId)}/attempts`, {}, token);
+}
+
+export function desativarAvaliacao(id, token = getToken()) {
+  return request(`/exams/${encodeURIComponent(id)}/deactivate`, { method: 'PATCH' }, token);
+}
+
 export async function buscarHistorico(token = getToken()) {
   const resultados = await request('/attempts/me', {}, token);
   return resultados.map((resultado) => ({

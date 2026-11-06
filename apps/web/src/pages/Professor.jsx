@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
 import { logout } from "../services/authService.js";
-import { buscarMinhasAvaliacoes, buscarQuestoes, criarAvaliacao } from "../services/examService.js";
+import { buscarMinhasAvaliacoes, buscarQuestoes, buscarTentativas, criarAvaliacao, desativarAvaliacao } from "../services/examService.js";
 import EvaluationCard from "../components/EvaluationCard";
 
 function Icon({ name, size = 18 }) {
@@ -163,6 +163,14 @@ function Professor() {
   const [salvando, setSalvando] = useState(false);
   const [erroCriacao, setErroCriacao] = useState("");
   const [mensagemAvaliacao, setMensagemAvaliacao] = useState("");
+  const [avaliacaoSelecionada, setAvaliacaoSelecionada] = useState(null);
+  const [tentativas, setTentativas] = useState([]);
+  const [carregandoTentativas, setCarregandoTentativas] = useState(false);
+  const [erroTentativas, setErroTentativas] = useState("");
+  const tentativasRequest = useRef(0);
+  const [avaliacaoParaDesativar, setAvaliacaoParaDesativar] = useState(null);
+  const [desativando, setDesativando] = useState(false);
+  const [erroDesativacao, setErroDesativacao] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -205,6 +213,67 @@ function Professor() {
     setMensagemAvaliacao("");
     setErroCriacao("");
     setPagina("avaliacoes");
+  };
+
+  const carregarTentativas = async (avaliacao) => {
+    const requestId = ++tentativasRequest.current;
+    setCarregandoTentativas(true);
+    setErroTentativas("");
+    try {
+      const resultados = await buscarTentativas(avaliacao.id);
+      if (tentativasRequest.current === requestId) setTentativas(resultados);
+    } catch (error) {
+      if (tentativasRequest.current !== requestId) return;
+      if (error.status === 401 || error.status === 403) {
+        logout();
+        navigate("/login", { replace: true });
+      } else {
+        setErroTentativas(error instanceof TypeError ? "Não foi possível conectar à API. Tente novamente." : error.message);
+      }
+    } finally {
+      if (tentativasRequest.current === requestId) setCarregandoTentativas(false);
+    }
+  };
+
+  const abrirResultados = (avaliacao) => {
+    setAvaliacaoSelecionada(avaliacao);
+    setPagina("resultados");
+    carregarTentativas(avaliacao);
+  };
+
+  const voltarDosResultados = () => {
+    tentativasRequest.current += 1;
+    setAvaliacaoSelecionada(null);
+    setTentativas([]);
+    setErroTentativas("");
+    setPagina("avaliacoes");
+  };
+
+  const abrirDesativacao = (avaliacao) => {
+    setAvaliacaoParaDesativar(avaliacao);
+    setErroDesativacao("");
+  };
+
+  const confirmarDesativacao = async () => {
+    if (!avaliacaoParaDesativar || desativando) return;
+    setDesativando(true);
+    setErroDesativacao("");
+    try {
+      const atualizada = await desativarAvaliacao(avaliacaoParaDesativar.id);
+      setAvaliacoes((atuais) => atuais.map((avaliacao) => avaliacao.id === atualizada.id ? atualizada : avaliacao));
+      setAvaliacaoSelecionada((atual) => atual?.id === atualizada.id ? atualizada : atual);
+      setAvaliacaoParaDesativar(null);
+      setMensagemAvaliacao("Avaliação desativada com sucesso.");
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) {
+        logout();
+        navigate("/login", { replace: true });
+      } else {
+        setErroDesativacao(error instanceof TypeError ? "Não foi possível conectar à API. Tente novamente." : error.message);
+      }
+    } finally {
+      setDesativando(false);
+    }
   };
 
   const voltarParaAvaliacoes = () => {
@@ -392,11 +461,24 @@ function Professor() {
           <section>
             <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><div className="mb-2 flex items-center gap-2 text-xs font-semibold text-[#6b59df]"><Icon name="clipboard" size={15} />professor</div><h1 className="text-3xl font-bold tracking-tight">Minhas avaliações</h1><p className="mt-2 text-sm text-gray-500">Visualize suas avaliações e acompanhe as tentativas dos alunos.</p></div><button type="button" onClick={abrirCriacao} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#7665e8] px-5 py-3 text-sm font-semibold text-white shadow-[0_7px_18px_rgba(118,101,232,0.3)] transition-all hover:-translate-y-0.5 hover:bg-[#6958dc]"><Icon name="plus" size={17} />Criar avaliação</button></div>
             <div className="grid gap-5 md:grid-cols-2">
-              {avaliacoes.map((avaliacao) => <EvaluationCard key={avaliacao.id} avaliacao={avaliacao} Icon={Icon} />)}
+              {avaliacoes.map((avaliacao) => <EvaluationCard key={avaliacao.id} avaliacao={avaliacao} Icon={Icon} onViewResults={abrirResultados} onDeactivate={abrirDesativacao} />)}
             </div>
             {!carregando && !erroDados && avaliacoes.length === 0 && <p className="rounded-xl bg-white p-6">Você ainda não criou avaliações.</p>}
           </section>
         )}
+
+        {pagina === "resultados" && avaliacaoSelecionada && (
+          <section>
+            <button type="button" onClick={voltarDosResultados} className="mb-5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-[0_6px_18px_rgba(57,49,122,0.08)] transition hover:-translate-x-0.5 hover:text-[#7665e8]"><Icon name="back" size={16} />Voltar para avaliações</button>
+            <div className="mb-5 rounded-[24px] bg-white p-7 shadow-[0_12px_32px_rgba(57,49,122,0.1)]"><p className="text-xs font-semibold uppercase tracking-wide text-[#7665e8]">resultados da avaliação</p><h1 className="mt-1 text-2xl font-bold">{avaliacaoSelecionada.title}</h1><p className="mt-2 text-sm text-gray-500">Tentativas enviadas pelos alunos nesta avaliação.</p></div>
+            {carregandoTentativas && <p role="status" className="rounded-xl bg-white p-5">Carregando tentativas...</p>}
+            {erroTentativas && <div role="alert" className="rounded-xl bg-white p-5"><p>{erroTentativas}</p><button type="button" onClick={() => carregarTentativas(avaliacaoSelecionada)} className="mt-3 font-semibold text-[#7665e8]">Tentar novamente</button></div>}
+            {!carregandoTentativas && !erroTentativas && tentativas.length === 0 && <p className="rounded-xl bg-white p-6">Nenhum aluno realizou esta avaliação ainda.</p>}
+            {!carregandoTentativas && !erroTentativas && tentativas.length > 0 && <div className="overflow-x-auto rounded-[22px] bg-white shadow-[0_10px_28px_rgba(57,49,122,0.1)]"><table className="min-w-full text-left text-sm"><thead className="border-b border-gray-100 bg-[#faf9ff] text-xs uppercase tracking-wide text-gray-500"><tr><th className="px-6 py-4">Aluno</th><th className="px-6 py-4">Acertos</th><th className="px-6 py-4">Nota</th><th className="px-6 py-4">Enviada em</th></tr></thead><tbody>{tentativas.map((tentativa) => <tr key={tentativa.id} className="border-b border-gray-100 last:border-0"><td className="px-6 py-4 font-semibold">{tentativa.studentName}</td><td className="px-6 py-4">{tentativa.score} de {tentativa.totalQuestions}</td><td className="px-6 py-4">{tentativa.totalQuestions > 0 ? (tentativa.score / tentativa.totalQuestions * 10).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : "0"}</td><td className="px-6 py-4 text-gray-500">{new Date(tentativa.createdAt).toLocaleString("pt-BR")}</td></tr>)}</tbody></table></div>}
+          </section>
+        )}
+
+        {avaliacaoParaDesativar && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#29263d]/40 p-4" role="dialog" aria-modal="true" aria-labelledby="titulo-desativar-avaliacao"><div className="w-full max-w-md rounded-[22px] bg-white p-6 shadow-2xl"><h2 id="titulo-desativar-avaliacao" className="text-xl font-bold">Desativar avaliação?</h2><p className="mt-3 text-sm leading-6 text-gray-600">Alunos não poderão mais realizar <strong>{avaliacaoParaDesativar.title}</strong>. As tentativas já enviadas serão preservadas.</p>{erroDesativacao && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{erroDesativacao}</p>}<div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" disabled={desativando} onClick={() => setAvaliacaoParaDesativar(null)} className="rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-700 disabled:opacity-50">Cancelar</button><button type="button" disabled={desativando} onClick={confirmarDesativacao} className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">{desativando ? "Desativando..." : "Desativar"}</button></div></div></div>}
 
         {/* leaderboard */}
         {pagina === "leaderboard" && (

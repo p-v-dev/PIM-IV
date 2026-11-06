@@ -2,6 +2,8 @@
 function EvaluationCard({
   avaliacao,
   Icon,
+  onViewResults,
+  onDeactivate,
 }) {
   return (
     <article
@@ -25,9 +27,10 @@ function EvaluationCard({
             </h2>
           </div>
 
-          <span className="shrink-0 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm">
-            {avaliacao.questionIds.length} questões
-          </span>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {avaliacao.isActive === false && <span className="rounded-full bg-red-500/80 px-3 py-1.5 text-xs font-semibold">Inativa</span>}
+            <span className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm">{avaliacao.questionIds.length} questões</span>
+          </div>
         </div>
       </div>
 
@@ -63,8 +66,7 @@ function EvaluationCard({
         <div className="mt-5 flex gap-2">
           <button
             type="button"
-            disabled
-            title="Consulta de resultados pendente: caso de uso 9"
+            onClick={() => onViewResults(avaliacao)}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#7665e8] px-4 py-3 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(118,101,232,0.25)] transition-all hover:-translate-y-0.5 hover:bg-[#6958dc]"
           >
             Ver resultados
@@ -73,10 +75,11 @@ function EvaluationCard({
 
           <button
             type="button"
-            disabled
+            disabled={avaliacao.isActive === false}
+            onClick={() => onDeactivate(avaliacao)}
             aria-label={`Desativar ${avaliacao.title}`}
-            title="Desativação pendente: caso de uso 10"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-500 transition-all hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-100 hover:text-red-600"
+            title={avaliacao.isActive === false ? "Avaliação inativa" : "Desativar avaliação"}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-500 transition-all hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-100 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Icon name="trash" size={18} />
           </button>

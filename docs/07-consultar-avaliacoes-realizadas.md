@@ -77,22 +77,6 @@ de resultados de `StudentPerformance`. `GET /leaderboard` agrega pontos de
 varios alunos e nao substitui consulta individual. `GET /exams` lista apenas
 avaliacoes futuras, portanto nao deve ser usado para reconstruir o historico.
 
-### UML de sequencia atual (web)
-
-```mermaid
-sequenceDiagram
-    actor Aluno
-    participant Tela as StudentPerformance
-    Aluno->>Tela: Acessa /desempenho
-    Tela->>Tela: Le array fixo resultados
-    Tela->>Tela: Calcula media e maior nota locais
-    Tela-->>Aluno: Exibe historico demonstrativo
-    Aluno->>Tela: Digita busca
-    Tela->>Tela: Filtra o array local
-    Tela-->>Aluno: Exibe itens filtrados
-    Note over Tela: Nao ha chamada a API nem consulta de Attempt
-```
-
 ## O que precisa fazer
 
 1. Criar consulta autenticada que retorne somente tentativas do proprio aluno,
@@ -157,30 +141,30 @@ Ficam fora do escopo: revisar questao por questao, consultar gabarito, baixar
 boletim, editar respostas, refazer avaliacao e criar uma pagina de detalhe.
 Nada disso e necessario para consultar a lista de avaliacoes realizadas.
 
-### UML de classes do fluxo alvo
+## UML do estado atual
 
 `StudentPerformance` e um componente React, e `examService` e um modulo JS;
-a representacao abaixo nao exige transforma-los em classes. Apenas
-`StudentAttemptsController` e novo; os metodos de consulta sao propostos.
+a representacao abaixo nao exige transforma-los em classes.
+`<<boundary>>` representa uma interface React; `<<control>>`, a logica web que
+coordena as chamadas a API.
 
 ```mermaid
 classDiagram
     class StudentPerformance {
-        <<componente React existente>>
+        <<boundary>>
         resultados
         busca
     }
     class examService {
-        <<modulo JS existente>>
-        buscarHistorico(token) proposta
+        <<control>>
+        buscarHistorico(token)
     }
     class StudentAttemptsController {
-        <<proposto>>
         findMine(request)
     }
     class AttemptService {
         submit(studentId, examId, answers)
-        findByStudent(studentId) proposta
+        findByStudent(studentId)
     }
     class Attempt {
         id
@@ -195,31 +179,34 @@ classDiagram
         title
         deadline
     }
-    StudentPerformance ..> examService : consulta proposta
-    examService ..> StudentAttemptsController : GET /attempts/me (proposto)
+    StudentPerformance ..> examService : consulta historico
+    examService ..> StudentAttemptsController : GET /attempts/me
     StudentAttemptsController --> AttemptService
     AttemptService ..> Attempt : consulta pelo aluno autenticado
     AttemptService ..> Exam : consulta titulo por examId
 ```
 
-### UML de sequencia do fluxo alvo (proposto)
+## Diagrama de sequencia
 
 ```mermaid
 sequenceDiagram
     actor Aluno
-    participant Tela as StudentPerformance (web) ou tela mobile futura
-    participant Controller as StudentAttemptsController (proposto)
+    participant Tela as StudentPerformance
+    participant Controle as examService
+    participant Controller as StudentAttemptsController
     participant Service as AttemptService
     participant Banco as Banco existente
     Aluno->>Tela: Abre historico de avaliacoes realizadas
-    Tela->>Controller: GET /attempts/me com token
+    Tela->>Controle: buscarHistorico()
+    Controle->>Controller: GET /attempts/me com token
     Note over Controller: Guards validam sessao ativa e papel student
-    Controller->>Service: findByStudent(request.user.id) (proposto)
+    Controller->>Service: findByStudent(request.user.id)
     Service->>Banco: Consulta tentativas do aluno e titulos das avaliacoes
     Note over Service,Banco: Mais recentes primeiro, sem filtrar prazo
     Banco-->>Service: Dados ou lista vazia
     Service-->>Controller: Lista resumida sem gabarito
-    Controller-->>Tela: HTTP 200 com historico
+    Controller-->>Controle: HTTP 200 com historico
+    Controle-->>Tela: Historico com nota de exibicao
     alt Existem tentativas
         Tela->>Tela: Formata datas e calcula notas de exibicao
         Tela-->>Aluno: Exibe avaliacoes, notas e datas

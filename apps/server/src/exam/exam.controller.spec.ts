@@ -19,6 +19,15 @@ describe('ExamController', () => {
     expect(Reflect.getMetadata(GUARDS_METADATA, ExamController.prototype.findMine)).toEqual([JwtAuthGuard, RolesGuard]);
   });
 
+  it('deactivates only an exam owned by the authenticated teacher', async () => {
+    const exams = { deactivate: vi.fn().mockResolvedValue({ id: 'exam-id', isActive: false }) };
+    const controller = new ExamController(exams as never);
+    await expect(controller.deactivate({ user: { id: 'teacher-id' } } as never, 'exam-id')).resolves.toMatchObject({ isActive: false });
+    expect(exams.deactivate).toHaveBeenCalledWith('teacher-id', 'exam-id');
+    expect(Reflect.getMetadata(ROLES_KEY, ExamController.prototype.deactivate)).toEqual(['teacher']);
+    expect(Reflect.getMetadata(GUARDS_METADATA, ExamController.prototype.deactivate)).toEqual([JwtAuthGuard, RolesGuard]);
+  });
+
   it('restricts individual exam content to students', async () => {
     const exams = { findForStudent: vi.fn().mockResolvedValue({ id: 'exam', questions: [] }) };
     const controller = new ExamController(exams as never);

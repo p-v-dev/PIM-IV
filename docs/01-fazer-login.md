@@ -26,35 +26,6 @@ Nao e necessario criar endpoint de login separado, decodificador JWT ou tabela.
 **Verificacao de aceite:** admin ativo entra; senha incorreta e conta inativa
 nao entram; aluno/professor nao abre a tela principal apos o ajuste proposto.
 
-### Sequencia do ajuste proposto (nao implementado)
-
-```mermaid
-sequenceDiagram
-    actor Admin as Usuario do Desktop
-    participant Tela as LoginForm
-    participant Api as AdminApiClient
-    participant Sessao as UserSession
-    participant Backend as API
-    Admin->>Tela: Informa e-mail e senha
-    Tela->>Api: LoginAsync(email, password)
-    Api->>Backend: POST /auth/login
-    Backend-->>Api: accessToken (credenciais validas)
-    Api-->>Tela: LoginResponse
-    Tela->>Sessao: SetToken(accessToken)
-    Tela->>Api: GetUsersAsync()
-    Api->>Backend: GET /users com token
-    alt Administrador autorizado
-        Backend-->>Api: HTTP 200 com usuarios
-        Api-->>Tela: Lista de usuarios
-        Tela->>Tela: Abre MainForm
-    else Perfil sem permissao ou sessao invalida
-        Backend-->>Api: HTTP 401 ou 403
-        Api-->>Tela: ApiException
-        Tela->>Sessao: Clear()
-        Tela-->>Admin: Permanece no login e informa o erro
-    end
-```
-
 ## Login de aluno e professor na web
 
 Implementado em 04/11/2026, preservando o layout existente e sem alterar o
@@ -77,28 +48,6 @@ nao cadastra novos usuarios.
 O navegador nao autoriza chamadas de API: os guards do backend continuam
 obrigatorios. O token sobrevive a recarga da aba; a senha nao e persistida.
 Sem refresh token ou recuperacao de senha neste escopo.
-
-```mermaid
-sequenceDiagram
-    actor Usuario as Aluno ou professor
-    participant Tela as Login
-    participant Sessao as authService
-    participant API as AuthController
-    Usuario->>Tela: Seleciona perfil e informa credenciais
-    Tela->>Sessao: login(email, password, role)
-    Sessao->>API: POST /auth/login
-    API-->>Sessao: accessToken ou erro de autenticacao
-    Sessao->>API: GET /auth/me com Bearer token
-    API-->>Sessao: Usuario ativo sem hash da senha
-    alt Perfil real corresponde ao selecionado
-        Sessao->>Sessao: Guarda token em sessionStorage
-        Sessao-->>Tela: Usuario autenticado
-        Tela-->>Usuario: Abre area do aluno ou professor
-    else Perfil diferente ou acesso nao autorizado
-        Sessao-->>Tela: Rejeita login sem guardar token
-        Tela-->>Usuario: Informa erro e permite tentar novamente
-    end
-```
 
 ### Verificacao da web
 
@@ -126,10 +75,9 @@ Foram criadas duas contas exclusivas para o teste, uma de cada perfil, e
 ambas foram desativadas ao final. Containers existentes do backend e do
 banco foram preservados; nenhum volume ou registro preexistente foi removido.
 
-## UML do estado atual do desktop
+## UML do estado atual
 
-Somente classes do projeto e o caminho feliz. O fluxo termina na abertura da
-tela principal, sem detalhar inicializacao, estilizacao ou consulta de usuarios.
+O diagrama inclui os clientes desktop e web e o caminho de autenticacao atual.
 
 ## Diagrama de classes
 
@@ -165,10 +113,21 @@ classDiagram
             -UserSession session
         }
     }
+    namespace Web {
+        class Login {
+            <<boundary>>
+        }
+        class authService {
+            <<control>>
+            +login(email, password, role)
+            +getSession()
+        }
+    }
     namespace Backend {
         class AuthController {
             -AuthService authService
             +login(dto)
+            +me(request)
         }
         class LoginDto {
             +string email
@@ -177,6 +136,7 @@ classDiagram
         class AuthService {
             -UsersService usersService
             +login(email, password)
+            +getCurrentUser(id)
             -passwordMatches(password, passwordHash)
         }
         class UsersService {
@@ -202,6 +162,8 @@ classDiagram
     AdminApiClient ..> LoginResponse : desserializa e retorna
     AdminApiClient ..> ApiException : cria e lanca
     AdminApiClient ..> AuthController : HTTP POST /auth/login
+    Login --> authService
+    authService ..> AuthController : POST /auth/login e GET /auth/me
     AuthController --> AuthService : authService
     AuthController ..> LoginDto : recebe
     AuthService --> UsersService : usersService
@@ -211,19 +173,24 @@ classDiagram
 
 ## Diagrama de sequencia
 
-Frontend a esquerda e backend a direita. Os DTOs e a entidade aparecem como
+`<<boundary>>` identifica telas e componentes de interface; `<<control>>`
+identifica modulos web que coordenam chamadas HTTP e sessao. Frontend a esquerda e backend a direita. Os DTOs e a entidade aparecem como
 dados das mensagens. `ApiException` nao participa do caminho feliz.
 Operacoes herdadas, como `Hide` e `ShowDialog`, sao indicadas sem adicionar
 classes do framework.
 
 ```mermaid
 sequenceDiagram
-    actor Admin as Administrador
+    actor Usuario
     box Frontend - Desktop
         participant Tela as LoginForm
         participant Sessao as UserSession
         participant Principal as MainForm
         participant Api as AdminApiClient
+    end
+    box Frontend - Web
+        participant Login as Login.jsx
+        participant SessaoWeb as authService
     end
     box Backend
         participant Controller as AuthController
@@ -231,22 +198,32 @@ sequenceDiagram
         participant Users as UsersService
     end
 
-    Admin->>Tela: Informa e-mail e senha e clica em Entrar
-    Tela->>Tela: Valida campos preenchidos
-    Tela->>Api: LoginAsync(email, password)
-    Api->>Controller: POST /auth/login
-    Controller->>Auth: login(dto.email, dto.password)
-    Auth->>Users: findByEmail(email)
-    Users-->>Auth: User
-    Auth->>Auth: Verifica usuario ativo e confere a senha
-    Note over Auth: Gera o token JWT
-    Auth-->>Controller: accessToken
-    Controller-->>Api: HTTP 201 com accessToken
-    Api-->>Tela: LoginResponse
-    Tela->>Sessao: SetToken(response.AccessToken)
-    Tela->>Tela: Hide()
-    Tela->>Principal: new MainForm(apiClient, session)
-    Tela->>Principal: ShowDialog(this)
+    alt Desktop administrativo
+        Usuario->>Tela: Informa e-mail e senha e clica em Entrar
+        Tela->>Tela: Valida campos preenchidos
+        Tela->>Api: LoginAsync(email, password)
+        Api->>Controller: POST /auth/login
+        Controller->>Auth: login(dto.email, dto.password)
+        Auth->>Users: findByEmail(email)
+        Users-->>Auth: User
+        Auth-->>Controller: accessToken
+        Controller-->>Api: HTTP 201 com accessToken
+        Api-->>Tela: LoginResponse
+        Tela->>Sessao: SetToken(response.AccessToken)
+        Tela->>Principal: new MainForm(apiClient, session)
+    else Web de aluno ou professor
+        Usuario->>Login: Seleciona perfil e informa credenciais
+        Login->>SessaoWeb: login(email, password, role)
+        SessaoWeb->>Controller: POST /auth/login
+        Controller->>Auth: login(email, password)
+        Auth->>Users: findByEmail(email)
+        Users-->>Auth: User
+        Auth-->>SessaoWeb: accessToken
+        SessaoWeb->>Controller: GET /auth/me
+        Controller->>Auth: getCurrentUser(user.id)
+        Auth-->>SessaoWeb: Usuario ativo e papel real
+        SessaoWeb-->>Login: Guarda token ou rejeita perfil divergente
+    end
 ```
 
 **Regra atual:** o endpoint aceita qualquer usuario ativo com senha correta.

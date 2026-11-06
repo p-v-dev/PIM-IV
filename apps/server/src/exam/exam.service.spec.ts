@@ -51,13 +51,29 @@ describe('ExamService', () => {
     const now = new Date('2026-09-01T12:00:00.000Z');
 
     await expect((service as any).findFuture(now)).resolves.toEqual([]);
-    expect(repository.findBy).toHaveBeenCalledOnce();
+    expect(repository.findBy).toHaveBeenCalledWith(expect.objectContaining({ isActive: true }));
   });
 
   it('lists only the authenticated teachers exams, including expired ones, newest first', async () => {
     repository.find.mockResolvedValue([{ id: 'old-exam', deadline: new Date('2020-01-01') }]);
     await expect(service.findByTeacher('teacher-id')).resolves.toHaveLength(1);
     expect(repository.find).toHaveBeenCalledWith({ where: { teacherId: 'teacher-id' }, order: { createdAt: 'DESC' } });
+  });
+
+  it('deactivates an exam owned by the teacher without deleting it', async () => {
+    repository.findOneBy.mockResolvedValue({ id: 'exam-id', teacherId: 'teacher-id', isActive: true });
+    repository.save.mockImplementation(async (value) => value);
+
+    await expect(service.deactivate('teacher-id', 'exam-id')).resolves.toMatchObject({ id: 'exam-id', isActive: false });
+    expect(repository.findOneBy).toHaveBeenCalledWith({ id: 'exam-id', teacherId: 'teacher-id' });
+    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'exam-id', isActive: false }));
+  });
+
+  it('hides an exam that belongs to another teacher when deactivating', async () => {
+    repository.findOneBy.mockResolvedValue(null);
+
+    await expect(service.deactivate('other-teacher', 'exam-id')).rejects.toBeInstanceOf(NotFoundException);
+    expect(repository.save).not.toHaveBeenCalled();
   });
 
   it('rejects invalid or past deadlines before saving', async () => {
@@ -99,6 +115,12 @@ describe('ExamService', () => {
       repository.findOneBy.mockResolvedValue(exam);
       await expect(service.findForStudent('exam')).rejects.toBeInstanceOf(NotFoundException);
     }
+  });
+
+  it('does not expose inactive exams to students', async () => {
+    repository.findOneBy.mockResolvedValue({ id: 'exam', isActive: false, deadline: new Date(Date.now() + 86400000), questionIds: ['q1'] });
+    await expect(service.findForStudent('exam')).rejects.toBeInstanceOf(NotFoundException);
+    expect(questions.findByIds).not.toHaveBeenCalled();
   });
 
   it('rejects exam content when a configured question is missing', async () => {

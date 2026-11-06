@@ -81,26 +81,6 @@ Nao ha envio, persistencia ou atualizacao real do historico pela web.
 `examService.js` ja possui `buscarAvaliacoes(token)`, mas a listagem de
 `StudentEvaluations` nao o utiliza. O login web nao obtem token da API.
 
-### UML de sequencia atual (web)
-
-```mermaid
-sequenceDiagram
-    actor Aluno
-    participant Lista as StudentEvaluations
-    participant Tela as StudentExam
-    Aluno->>Lista: Abre avaliacoes
-    Lista-->>Aluno: Exibe array fixo
-    Aluno->>Lista: Clica em Realizar avaliacao
-    Lista->>Tela: Navega para /avaliacao/:id
-    Note over Tela: Usa questoesDemo, nao consulta a API
-    Aluno->>Tela: Seleciona alternativas
-    Tela->>Tela: Guarda respostas no estado React
-    Aluno->>Tela: Finaliza
-    Tela->>Tela: Compara com gabarito local
-    Tela-->>Aluno: Exibe acertos e pontos demonstrativos
-    Note over Tela: Nada e salvo no banco
-```
-
 ## O que precisa fazer
 
 1. Conectar o login web a `POST /auth/login`, manter o token para chamadas e
@@ -170,32 +150,36 @@ respondidas; no minimo, tratar o conflito informado pelo POST sem mostrar sucess
 O mobile reutilizara a mesma API, mas nao ha tecnologia ou classes de tela
 definidas no repositorio; por isso os diagramas nao inventam classes mobile.
 
-### UML de classes do fluxo alvo
+## UML do estado atual
 
-Classes backend ja existem; `findForStudent` e proposto. `StudentExam` e uma
-funcao React e `examService` e um modulo JS, representados como componentes
-logicos no diagrama, nao como novas classes a criar.
+`StudentExam` e `StudentEvaluations` sao componentes React, e `examService` e
+um modulo JS, representados como componentes logicos no diagrama.
+`<<boundary>>` representa uma interface React; `<<control>>`, a logica web que
+coordena as chamadas a API.
 
 ```mermaid
 classDiagram
     class StudentExam {
-        <<componente React existente>>
+        <<boundary>>
         respostas
         finalizarAvaliacao()
     }
+    class StudentEvaluations {
+        <<boundary>>
+    }
     class examService {
-        <<modulo JS existente>>
+        <<control>>
         buscarAvaliacoes(token)
-        buscarAvaliacao(id, token) proposta
-        enviarRespostas(id, answers, token) proposta
+        buscarAvaliacao(id, token)
+        enviarRespostas(id, answers, token)
     }
     class ExamController {
         findFuture()
-        findForStudent(id) proposta
+        findForStudent(id)
     }
     class ExamService {
         findFuture()
-        findForStudent(id) proposta
+        findForStudent(id)
     }
     class QuestionService {
         findByIds(ids)
@@ -214,43 +198,72 @@ classDiagram
         totalQuestions
         createdAt
     }
-    StudentExam ..> examService : consultar e enviar (proposto)
-    examService ..> ExamController : GET /exams/id (proposto)
+    class Exam {
+        id
+        deadline
+        questionIds
+        isActive
+    }
+    class Question {
+        id
+        prompt
+        options
+        correctOptionIndex
+    }
+    StudentEvaluations ..> examService : lista avaliacoes
+    StudentExam ..> examService : consulta e envia respostas
+    examService ..> ExamController : GET /exams e GET /exams/id
     ExamController --> ExamService
+    ExamService ..> Exam : consulta disponibilidade
     ExamService --> QuestionService
-    examService ..> AttemptController : POST existente, integracao proposta
+    QuestionService ..> Question : consulta
+    examService ..> AttemptController : POST /exams/id/attempts
     AttemptController --> AttemptService
     AttemptService --> QuestionService
     AttemptService ..> Attempt : persiste
+    AttemptService ..> Exam : valida disponibilidade
 ```
 
-### UML de sequencia do fluxo alvo (integracao proposta)
+## Diagrama de sequencia
 
 ```mermaid
 sequenceDiagram
     actor Aluno
-    participant Tela as StudentExam (web) ou tela mobile futura
+    participant Lista as StudentEvaluations
+    participant Tela as StudentExam
+    participant Controle as examService
     participant API as API autenticada como student
     participant Exams as ExamService
     participant Questions as QuestionService
     participant Attempts as AttemptService
+    Aluno->>Lista: Abre avaliacoes
+    Lista->>Controle: buscarAvaliacoes()
+    Controle->>API: GET /exams com token
+    API->>Exams: findFuture()
+    Exams-->>API: Avaliacoes ativas e futuras
+    API-->>Controle: Avaliacoes disponiveis
+    Controle-->>Lista: Avaliacoes disponiveis
     Aluno->>Tela: Abre avaliacao selecionada
-    Tela->>API: GET /exams/:id com token (proposto)
-    API->>Exams: findForStudent(id) (proposto)
+    Tela->>Controle: buscarAvaliacao(id)
+    Controle->>API: GET /exams/:id com token
+    API->>Exams: findForStudent(id)
     Exams->>Exams: Consulta avaliacao e valida prazo
     Exams->>Questions: findByIds(questionIds)
     Questions-->>Exams: Questoes
     Exams-->>API: Avaliacao e questoes sem gabarito
-    API-->>Tela: Conteudo da avaliacao
+    API-->>Controle: Conteudo da avaliacao
+    Controle-->>Tela: Conteudo da avaliacao
     Aluno->>Tela: Responde todas as questoes e finaliza
-    Tela->>API: POST /exams/:examId/attempts com answers e token
+    Tela->>Controle: enviarRespostas(examId, answers)
+    Controle->>API: POST /exams/:examId/attempts com token
     API->>Attempts: submit(request.user.id, examId, answers)
     Attempts->>Attempts: Valida prazo, duplicidade e respostas
     Attempts->>Questions: findByIds(questionIds)
     Questions-->>Attempts: Questoes com gabarito (uso interno)
     Attempts->>Attempts: Corrige e salva Attempt
     Attempts-->>API: Tentativa salva e pointsEarned
-    API-->>Tela: Resultado oficial
+    API-->>Controle: Resultado oficial
+    Controle-->>Tela: Resultado oficial
     Tela-->>Aluno: Exibe acertos, total e pontos
 ```
 

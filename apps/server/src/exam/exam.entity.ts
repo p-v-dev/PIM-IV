@@ -20,6 +20,9 @@ export class Exam {
   @Column('simple-json')
   questionIds: string[];
 
+  @Column({ default: true })
+  isActive: boolean;
+
   @CreateDateColumn({ type: 'datetime2' })
   createdAt: Date;
 }

@@ -33,21 +33,28 @@ export class ExamService {
         description: dto.description.trim(),
         deadline,
         questionIds: dto.questionIds,
+        isActive: true,
       }),
     );
   }
 
   findFuture(now = new Date()) {
-    return this.repository.findBy({ deadline: MoreThan(now) });
+    return this.repository.findBy({ deadline: MoreThan(now), isActive: true });
   }
 
   findByTeacher(teacherId: string) {
     return this.repository.find({ where: { teacherId }, order: { createdAt: 'DESC' } });
   }
 
+  async deactivate(teacherId: string, id: string) {
+    const exam = await this.repository.findOneBy({ id, teacherId });
+    if (!exam) throw new NotFoundException('Exam not found');
+    return this.repository.save({ ...exam, isActive: false });
+  }
+
   async findForStudent(id: string) {
     const exam = await this.repository.findOneBy({ id });
-    if (!exam || exam.deadline <= new Date() || !exam.questionIds.length) {
+    if (!exam || exam.isActive === false || exam.deadline <= new Date() || !exam.questionIds.length) {
       throw new NotFoundException('Exam unavailable');
     }
     const questions = await this.questionService.findByIds(exam.questionIds);

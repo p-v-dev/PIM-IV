@@ -20,6 +20,13 @@ export class AttemptController {
   submit(@Req() request: AuthenticatedRequest, @Param('examId', new ParseUUIDPipe()) examId: string, @Body() dto: SubmitAttemptDto) {
     return this.attempts.submit(request.user.id, examId, dto.answers);
   }
+
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('teacher')
+  findByExam(@Req() request: AuthenticatedRequest, @Param('examId', new ParseUUIDPipe()) examId: string) {
+    return this.attempts.findByExam(request.user.id, examId);
+  }
 }
 
 @Controller('attempts')

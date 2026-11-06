@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { CreateExamDto } from './dto/create-exam.dto.js';
 import { ExamService } from './exam.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -27,6 +27,14 @@ export class ExamController {
   @Roles('teacher')
   findMine(@Req() request: AuthenticatedRequest) {
     return this.examService.findByTeacher(request.user.id);
+  }
+
+  @Patch(':id/deactivate')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('teacher')
+  deactivate(@Req() request: AuthenticatedRequest, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.examService.deactivate(request.user.id, id);
   }
 
   @Get()

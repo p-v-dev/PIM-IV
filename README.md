@@ -27,7 +27,7 @@ Processos de avaliação costumam ficar fragmentados entre planilhas, formulári
 
 ### Parciais
 
-- A aplicação web possui login real, rotas protegidas, criação/listagem do professor, realização de avaliações e histórico do aluno; consulta de tentativas pelo professor e desativação ainda não estão completamente integradas à API.
+- A aplicação web possui login real, rotas protegidas, criação/listagem e desativação de avaliações, consulta de tentativas, realização de avaliações e histórico do aluno.
 - O aplicativo desktop possui testes automatizados para partes do cliente HTTP e da sessão; os fluxos integrados contra uma API em execução ainda dependem de validação manual.
 
 ### Planejadas

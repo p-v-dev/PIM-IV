@@ -7,30 +7,26 @@ avaliacao de sua autoria.
 
 ## Estado atual
 
-Analise estatica do codigo em 28/10/2026; aplicacao e banco nao executados.
+Implementado na web e API. Validado por testes unitarios, lint e build em
+06/11/2026.
 
 | Parte | Status | O que tem |
 | --- | --- | --- |
-| Web | Desativacao nao implementada | Existe botao Excluir e confirmacao, mas apenas removem a avaliacao do estado local, sem chamada a API. |
-| API | Nao implementada | `Exam` nao possui status ativo e `ExamController` so oferece criacao e listagem de avaliacoes futuras. |
+| Web | Implementado | Professor confirma a desativacao, recebe o estado persistido e o cartao passa a exibir Inativa sem ser removido. |
+| API | Implementado | `Exam.isActive` inicia como verdadeiro e `PATCH /exams/:id/deactivate` desativa somente uma avaliacao do professor autenticado. |
 
-Excluir um item da tela nao e desativar. Hoje o backend bloqueia envio por
-prazo vencido, inexistencia ou tentativa repetida; nao verifica desativacao.
-Avaliacoes e tentativas reais nao sao alteradas pelo botao atual da web.
+Avaliacoes inativas nao aparecem na lista do aluno, nao entregam conteudo e
+rejeitam novas tentativas. Avaliacoes e tentativas nao sao excluidas: o professor
+continua vendo a avaliacao inativa e seus resultados, e o aluno preserva o
+historico ja salvo.
 
-### UML de sequencia atual (web)
+Em desenvolvimento, o TypeORM cria a coluna `isActive` por `synchronize`.
+Em banco de producao, aplicar uma migration com valor padrao `true` antes de
+publicar esta versao.
 
-```mermaid
-sequenceDiagram
-    actor Professor
-    participant Tela as Professor.jsx
-    Professor->>Tela: Clica em Excluir
-    Tela-->>Professor: Exibe confirmacao de exclusao
-    Professor->>Tela: Confirma
-    Tela->>Tela: Filtra avaliacoes no estado React
-    Tela-->>Professor: Item deixa de aparecer
-    Note over Tela: Sem API e sem persistencia; nao ha desativacao
-```
+## Planejamento original (historico)
+
+O registro abaixo descreve a tela e a API antes da integracao.
 
 ## O que precisa fazer
 
@@ -93,62 +89,67 @@ Durante o envio, bloquear nova confirmacao. Em falha, preservar o item e
 informar erro; cancelar o modal nao faz chamada nem altera o estado. Nao criar
 nova pagina, reativacao, exclusao permanente ou tabela de arquivamento.
 
-### UML de classes do fluxo alvo
+## UML do estado atual
 
-Os componentes e classes ja existem. O campo e os metodos marcados sao
-propostos; `Professor` e `examService` sao representacoes logicas do frontend.
+`Professor` e `examService` sao representacoes logicas do frontend.
+`<<boundary>>` representa uma interface React; `<<control>>`, a logica web que
+coordena as chamadas a API.
 
 ```mermaid
 classDiagram
     class Professor {
-        <<componente React existente>>
-        desativarAvaliacao() proposta
+        <<boundary>>
+        abrirDesativacao(avaliacao)
+        confirmarDesativacao()
     }
     class EvaluationCard {
-        <<componente React existente>>
-        isActive proposta
+        <<boundary>>
+        onDeactivate(avaliacao)
     }
     class examService {
-        <<modulo JS existente>>
-        desativarAvaliacao(id, token) proposta
+        <<control>>
+        desativarAvaliacao(id, token)
     }
     class ExamController {
-        deactivate(request, id) proposta
+        deactivate(request, id)
     }
     class ExamService {
-        deactivate(teacherId, id) proposta
+        deactivate(teacherId, id)
         findFuture()
+        findForStudent(id)
     }
     class Exam {
         id
         teacherId
         deadline
-        isActive proposta
+        isActive
     }
     class AttemptService {
         submit(studentId, examId, answers)
     }
     Professor ..> EvaluationCard : exibe estado real
-    Professor ..> examService : integracao proposta
-    examService ..> ExamController : PATCH proposto
+    Professor ..> examService : confirma desativacao
+    examService ..> ExamController : PATCH /exams/id/deactivate
     ExamController --> ExamService
     ExamService ..> Exam : consulta propriedade e atualiza status
-    AttemptService ..> Exam : validar isActive (proposto)
+    AttemptService ..> Exam : valida isActive
 ```
 
-### UML de sequencia do fluxo alvo (proposto)
+## Diagrama de sequencia
 
 ```mermaid
 sequenceDiagram
     actor Professor
     participant Tela as Professor.jsx
+    participant Controle as examService
     participant Controller as ExamController
     participant Service as ExamService
     participant Banco as Banco existente
     Professor->>Tela: Clica em Desativar
     Tela-->>Professor: Solicita confirmacao
     Professor->>Tela: Confirma
-    Tela->>Controller: PATCH /exams/:id/deactivate com token
+    Tela->>Controle: desativarAvaliacao(id)
+    Controle->>Controller: PATCH /exams/:id/deactivate com token
     Note over Controller: Guards exigem sessao ativa e papel teacher
     Controller->>Service: deactivate(request.user.id, id)
     Service->>Banco: Busca por id e teacherId
@@ -157,12 +158,14 @@ sequenceDiagram
         Service->>Banco: Salva isActive = false
         Banco-->>Service: Avaliacao inativa
         Service-->>Controller: Avaliacao atualizada
-        Controller-->>Tela: HTTP 200 com avaliacao
+        Controller-->>Controle: HTTP 200 com avaliacao
+        Controle-->>Tela: Avaliacao atualizada
         Tela-->>Professor: Marca Inativa e mantem resultados acessiveis
         Note over Banco: Exam e Attempt permanecem no banco
     else Avaliacao inexistente ou de outro professor
         Service-->>Controller: Nao encontrada
-        Controller-->>Tela: HTTP 404
+        Controller-->>Controle: HTTP 404
+        Controle-->>Tela: Erro de indisponibilidade
         Tela-->>Professor: Informa erro sem alterar a lista
     end
 ```

@@ -64,22 +64,6 @@ categoria e dificuldade, campos inexistentes em `Exam`, e nao tem o prazo que
 a API exige. O login web e demonstrativo; nome/e-mail locais nao comprovam a
 identidade do professor nem a propriedade das avaliacoes.
 
-### UML de sequencia atual (web)
-
-```mermaid
-sequenceDiagram
-    actor Professor
-    participant Tela as Professor.jsx
-    Professor->>Tela: Abre criacao de avaliacao
-    Tela-->>Professor: Exibe bancoQuestoes fixo
-    Professor->>Tela: Preenche formulario e seleciona questoes
-    Professor->>Tela: Clica em Salvar
-    Tela->>Tela: Valida titulo, descricao e selecao
-    Tela->>Tela: Gera ID local e atualiza avaliacoes
-    Tela-->>Professor: Informa sucesso demonstrativo
-    Note over Tela: Nao chama a API; recarregar perde a criacao
-```
-
 ## O que precisa fazer
 
 1. Conectar o login a `POST /auth/login`, enviar Bearer token e proteger a area
@@ -146,34 +130,43 @@ real na lista depois do POST bem-sucedido. Em falha, manter formulario e
 selecao preenchidos. Nao enviar categoria, dificuldade, ID local ou `teacherId`:
 a API rejeita campos extras e determina a identidade pelo token.
 
-### UML de classes do fluxo alvo
+## UML do estado atual
 
 `Professor` representa o componente React e `examService` o modulo JS, nao
-novas classes a criar. Metodos marcados como proposta ainda nao existem.
+novas classes a criar.
+`<<boundary>>` representa uma interface React; `<<control>>`, a logica web que
+coordena as chamadas a API.
 
 ```mermaid
 classDiagram
     class Professor {
-        <<componente React existente>>
+        <<boundary>>
         salvarAvaliacao()
         questoesSelecionadas
     }
     class examService {
-        <<modulo JS existente>>
-        buscarQuestoes(token) proposta
-        criarAvaliacao(dados, token) proposta
-        buscarMinhasAvaliacoes(token) proposta
+        <<control>>
+        buscarQuestoes(token)
+        criarAvaliacao(dados, token)
+        buscarMinhasAvaliacoes(token)
     }
     class QuestionController {
         findAll()
     }
+    class EvaluationCard {
+        <<boundary>>
+    }
+    class QuestionService {
+        findAll()
+        findByIds(ids)
+    }
     class ExamController {
         create(request, dto)
-        findMine(request) proposta
+        findMine(request)
     }
     class ExamService {
         create(teacherId, dto)
-        findByTeacher(teacherId) proposta
+        findByTeacher(teacherId)
     }
     class Exam {
         id
@@ -183,40 +176,50 @@ classDiagram
         deadline
         questionIds
     }
-    Professor ..> examService : integracao proposta
+    Professor ..> examService : carrega e cria avaliacoes
+    Professor --> EvaluationCard : exibe avaliacoes
     examService ..> QuestionController : GET /questions existente
-    examService ..> ExamController : POST existente e GET mine proposto
+    QuestionController --> QuestionService
+    examService ..> ExamController : POST /exams e GET /exams/mine
     ExamController --> ExamService
+    ExamService --> QuestionService
     ExamService ..> Exam : consulta e persiste
 ```
 
-### UML de sequencia do fluxo alvo (integracao proposta)
+## Diagrama de sequencia
 
 ```mermaid
 sequenceDiagram
     actor Professor
     participant Tela as Professor.jsx
+    participant Controle as examService
     participant API as API autenticada como teacher
     participant Service as ExamService
     participant Questions as QuestionService
     Professor->>Tela: Abre Minhas avaliacoes
-    Tela->>API: GET /exams/mine (proposto)
-    API->>Service: findByTeacher(request.user.id) (proposto)
+    Tela->>Controle: buscarMinhasAvaliacoes()
+    Controle->>API: GET /exams/mine
+    API->>Service: findByTeacher(request.user.id)
     Service-->>API: Avaliacoes do professor
-    API-->>Tela: Lista real
+    API-->>Controle: Lista real
+    Controle-->>Tela: Lista real
     Professor->>Tela: Abre criacao
-    Tela->>API: GET /questions
+    Tela->>Controle: buscarQuestoes()
+    Controle->>API: GET /questions
     API->>Questions: findAll()
     Questions-->>API: Questoes existentes
-    API-->>Tela: Banco de questoes real
+    API-->>Controle: Banco de questoes real
+    Controle-->>Tela: Banco de questoes real
     Professor->>Tela: Preenche titulo, descricao, prazo e seleciona questoes
-    Tela->>API: POST /exams com contrato e token
+    Tela->>Controle: criarAvaliacao(dados)
+    Controle->>API: POST /exams com contrato e token
     API->>Service: create(request.user.id, dto)
     Service->>Questions: findByIds(dto.questionIds)
     Questions-->>Service: Questoes encontradas
     Service->>Service: Valida e persiste Exam
     Service-->>API: Avaliacao salva
-    API-->>Tela: HTTP 201 com avaliacao
+    API-->>Controle: HTTP 201 com avaliacao
+    Controle-->>Tela: Avaliacao criada
     Tela-->>Professor: Exibe avaliacao criada na lista
 ```
 

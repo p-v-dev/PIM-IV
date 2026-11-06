@@ -14,7 +14,7 @@ Interface web do EduQuest, construída com React e Vite. O módulo está em dese
 - O professor carrega questões reais, cria avaliações com prazo futuro e consulta sua própria lista persistida.
 - O aluno lista avaliações reais, responde questões sem acesso ao gabarito e recebe a correção e os pontos do servidor.
 - O aluno consulta seu histórico real de avaliações, com notas e resumos calculados a partir dos acertos registrados.
-- Consulta de tentativas pelo professor e desativação ainda estão em desenvolvimento.
+- O professor consulta as tentativas e desativa suas próprias avaliações.
 
 O web app ainda não representa uma interface acadêmica completa: autenticação está integrada, mas os demais fluxos possuem dados demonstrativos e integrações pendentes.
 

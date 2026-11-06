@@ -7,30 +7,22 @@ avaliacao de sua autoria. A avaliacao pode estar vencida ou desativada.
 
 ## Estado atual
 
-Analise estatica do codigo em 28/10/2026; aplicacao e banco nao executados.
+Implementado na web e API. Validado por testes unitarios, lint e build em
+06/11/2026.
 
 | Parte | Status | O que tem |
 | --- | --- | --- |
-| Web | Parcial: demonstracao local | Painel permite selecionar uma avaliacao e ver tabela de alunos, notas, datas e resumos, todos fixos no estado de `Professor.jsx`. |
-| API | Consulta nao implementada | `Attempt` ja persiste tentativas reais pelo POST do aluno, mas nao existe GET de tentativas por avaliacao. |
+| Web | Implementado | Professor abre os resultados de uma avaliacao e visualiza carregamento, erro, lista vazia ou tabela com aluno, acertos, nota e data. |
+| API | Implementado | `GET /exams/:examId/attempts` exige professor, confirma que a avaliacao e de sua autoria e retorna resultados resumidos. |
 
-`GET /leaderboard` e um ranking agregado e nao substitui esta consulta.
-O mock permite uma segunda tentativa do mesmo aluno; a regra real possui
-indice unico em `(studentId, examId)`, permitindo apenas uma por avaliacao.
-O login web e demonstrativo e a lista de avaliacoes tambem e fixa.
+`GET /leaderboard` e um ranking agregado e nao substitui esta consulta. A API
+mantem um indice unico em `(studentId, examId)`, permitindo apenas uma tentativa
+por aluno em cada avaliacao. A tela ignora respostas atrasadas ao trocar de
+avaliacao e encerra a sessao em respostas 401 ou 403.
 
-### UML de sequencia atual (web)
+## Planejamento original (historico)
 
-```mermaid
-sequenceDiagram
-    actor Professor
-    participant Tela as Professor.jsx
-    Professor->>Tela: Seleciona avaliacao e abre resultados
-    Tela->>Tela: Le avaliacaoSelecionada.tentativas do mock
-    Tela->>Tela: Calcula quantidade e media locais
-    Tela-->>Professor: Exibe tabela demonstrativa
-    Note over Tela: Nao consulta Attempt na API
-```
+O registro abaixo descreve a demonstracao local existente antes da integracao.
 
 ## O que precisa fazer
 
@@ -82,28 +74,35 @@ resumos globais ficticios nem buscar resultados de todas as avaliacoes so para
 mante-los. O escopo e consultar resultados por avaliacao, nao revisar cada
 resposta, exportar planilha ou permitir novas tentativas.
 
-### UML de classes do fluxo alvo
+## UML do estado atual
 
-`Professor` e componente React e `examService` e modulo JS. As classes backend
-existem; apenas os metodos e a integracao de consulta abaixo sao propostos.
+`Professor` e componente React e `examService` e modulo JS.
+`<<boundary>>` representa uma interface React; `<<control>>`, a logica web que
+coordena as chamadas a API.
 
 ```mermaid
 classDiagram
     class Professor {
-        <<componente React existente>>
+        <<boundary>>
         avaliacaoSelecionada
         tentativas
+        abrirResultados(avaliacao)
+        carregarTentativas(avaliacao)
+    }
+    class EvaluationCard {
+        <<boundary>>
+        onViewResults(avaliacao)
     }
     class examService {
-        <<modulo JS existente>>
-        buscarTentativas(examId, token) proposta
+        <<control>>
+        buscarTentativas(examId, token)
     }
     class AttemptController {
         submit(request, examId, dto)
-        findByExam(request, examId) proposta
+        findByExam(request, examId)
     }
     class AttemptService {
-        findByExam(teacherId, examId) proposta
+        findByExam(teacherId, examId)
     }
     class Exam {
         id
@@ -120,25 +119,28 @@ classDiagram
         id
         name
     }
-    Professor ..> examService : integracao proposta
-    examService ..> AttemptController : GET proposto
+    Professor ..> examService : consulta resultados
+    Professor --> EvaluationCard : recebe a selecao
+    examService ..> AttemptController : GET /exams/id/attempts
     AttemptController --> AttemptService
     AttemptService ..> Exam : verifica propriedade
     AttemptService ..> Attempt : consulta por examId
     AttemptService ..> User : consulta nome do aluno
 ```
 
-### UML de sequencia do fluxo alvo (proposto)
+## Diagrama de sequencia
 
 ```mermaid
 sequenceDiagram
     actor Professor
     participant Tela as Professor.jsx
+    participant Controle as examService
     participant Controller as AttemptController
     participant Service as AttemptService
     participant Banco as Banco existente
     Professor->>Tela: Abre resultados de uma avaliacao
-    Tela->>Controller: GET /exams/:examId/attempts com token
+    Tela->>Controle: buscarTentativas(examId)
+    Controle->>Controller: GET /exams/:examId/attempts com token
     Note over Controller: Guards exigem sessao ativa e papel teacher
     Controller->>Service: findByExam(request.user.id, examId)
     Service->>Banco: Busca Exam por id e teacherId
@@ -147,11 +149,13 @@ sequenceDiagram
         Service->>Banco: Busca tentativas e nomes dos alunos
         Banco-->>Service: Resultados ou lista vazia
         Service-->>Controller: Lista resumida
-        Controller-->>Tela: HTTP 200
+        Controller-->>Controle: HTTP 200
+        Controle-->>Tela: Resultados resumidos
         Tela-->>Professor: Tabela real ou mensagem sem tentativas
     else Avaliacao inexistente ou de outro professor
         Service-->>Controller: Nao encontrada
-        Controller-->>Tela: HTTP 404
+        Controller-->>Controle: HTTP 404
+        Controle-->>Tela: Erro de indisponibilidade
         Tela-->>Professor: Informa indisponibilidade sem expor resultados
     end
 ```

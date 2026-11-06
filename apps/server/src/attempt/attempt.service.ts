@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { v7 } from 'uuid';
 import { QueryFailedError, Repository } from 'typeorm';
@@ -14,7 +14,7 @@ export class AttemptService {
   constructor(@InjectRepository(Attempt) private readonly repository: Repository<Attempt>, @InjectRepository(Exam) private readonly exams: Repository<Exam>, private readonly questions: QuestionService, @InjectRepository(User) private readonly users: Repository<User>) {}
   async submit(studentId: string, examId: string, answers: Attempt['answers']) {
     const exam = await this.exams.findOneBy({ id: examId });
-    if (!exam || exam.deadline <= new Date()) throw new BadRequestException('Exam unavailable');
+    if (!exam || exam.isActive === false || exam.deadline <= new Date()) throw new BadRequestException('Exam unavailable');
     if (await this.repository.existsBy({ studentId, examId })) throw new ConflictException('Exam already attempted');
     if (answers.length !== exam.questionIds.length || new Set(answers.map((a) => a.questionId.toLowerCase())).size !== answers.length) throw new BadRequestException('Invalid answers');
     const questions = await this.questions.findByIds(exam.questionIds);
@@ -52,6 +52,25 @@ export class AttemptService {
       .orderBy('attempt.createdAt', 'DESC')
       .addOrderBy('attempt.id', 'DESC')
       .getRawMany<{ id: string; examId: string; title: string; score: number; totalQuestions: number; createdAt: Date }>();
+  }
+
+  async findByExam(teacherId: string, examId: string) {
+    const exam = await this.exams.findOneBy({ id: examId, teacherId });
+    if (!exam) throw new NotFoundException('Exam not found');
+
+    return this.repository.createQueryBuilder('attempt')
+      .innerJoin(User, 'student', 'student.id = attempt.studentId')
+      .select('attempt.id', 'id')
+      .addSelect('attempt.examId', 'examId')
+      .addSelect('attempt.studentId', 'studentId')
+      .addSelect('student.name', 'studentName')
+      .addSelect('attempt.score', 'score')
+      .addSelect('attempt.totalQuestions', 'totalQuestions')
+      .addSelect('attempt.createdAt', 'createdAt')
+      .where('attempt.examId = :examId', { examId })
+      .orderBy('attempt.createdAt', 'DESC')
+      .addOrderBy('attempt.id', 'DESC')
+      .getRawMany<{ id: string; examId: string; studentId: string; studentName: string; score: number; totalQuestions: number; createdAt: Date }>();
   }
 
   getLeaderboard() {

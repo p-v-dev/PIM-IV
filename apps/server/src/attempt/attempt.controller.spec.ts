@@ -9,6 +9,16 @@ describe('AttemptController', () => {
     const controller = new AttemptController({} as never);
     expect(controller).toBeDefined();
   });
+
+  it('uses the authenticated teacher identity to find attempts for an exam', async () => {
+    const results = [{ id: 'attempt', studentName: 'Ana', score: 1, totalQuestions: 2 }];
+    const attempts = { findByExam: vi.fn().mockResolvedValue(results) };
+    const controller = new AttemptController(attempts as never);
+
+    await expect(controller.findByExam({ user: { id: 'teacher-id' } } as never, 'exam-id')).resolves.toEqual(results);
+    expect(attempts.findByExam).toHaveBeenCalledWith('teacher-id', 'exam-id');
+    expect(Reflect.getMetadata(ROLES_KEY, controller.findByExam)).toEqual(['teacher']);
+  });
 });
 
 describe('LeaderboardController', () => {
