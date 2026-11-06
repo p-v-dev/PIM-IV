@@ -1,6 +1,6 @@
-# 4. Listar usuarios
+# 4. Listar usuarios - Administrador
 
-**Ator:** administrador.
+**Atores:** administrador.
 
 **Precondicao:** administrador autenticado.
 

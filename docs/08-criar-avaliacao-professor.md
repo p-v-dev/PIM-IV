@@ -1,6 +1,6 @@
-# 8. Criar avaliacao
+# 8. Criar avaliacao - Professor
 
-**Ator:** professor (`teacher`). **Frontend:** somente web.
+**Atores:** professor (`teacher`). **Frontend:** somente web.
 
 **Precondicao do fluxo real:** professor autenticado e ativo, com questoes
 existentes disponiveis para selecao.

@@ -1,6 +1,6 @@
-# 7. Consultar avaliacoes realizadas
+# 7. Consultar avaliacoes realizadas - Aluno
 
-**Ator:** aluno (`student`). **Frontends:** web e mobile.
+**Atores:** aluno (`student`). **Frontends:** web e mobile.
 
 **Precondicao do fluxo real:** aluno autenticado e ativo. Nao e preciso ter
 tentativas: nesse caso a consulta deve apresentar historico vazio.
@@ -84,7 +84,7 @@ avaliacoes futuras, portanto nao deve ser usado para reconstruir o historico.
 2. Conectar `StudentPerformance` a essa consulta, removendo o array fixo e
    mantendo o layout e a busca local que ja existem.
 3. Tratar carregamento, falha de consulta, sessao nao autorizada e historico vazio.
-4. Usar o login/token e o envio real descritos em [Fazer avaliacao](06-fazer-avaliacao.md).
+4. Usar o login/token e o envio real descritos em [Fazer avaliacao](06-fazer-avaliacao-aluno.md).
    A consulta pode ser implementada antes do envio web e validada com tentativas
    cadastradas pelo POST da API.
 5. No mobile futuro, criar uma tela de historico usando o mesmo endpoint.
@@ -107,7 +107,7 @@ servico ja possui acesso ao repositorio de avaliacoes. Nao filtrar pelo prazo:
 avaliacoes vencidas tambem fazem parte do historico. Nao receber `studentId`
 da URL ou do corpo; a identidade vem do JWT validado pela API.
 
-A mesma regra vale para avaliacoes desativadas apos o [caso 10](10-desativar-avaliacao.md):
+A mesma regra vale para avaliacoes desativadas apos o [caso 10](10-desativar-avaliacao-professor.md):
 nao filtrar `Exam.isActive` ao consultar historico. O campo proposto representa
 disponibilidade para realizar a avaliacao, nao validade dos resultados salvos.
 

@@ -1,6 +1,6 @@
-# 3. Editar usuario
+# 3. Editar usuario - Administrador
 
-**Ator:** administrador.
+**Atores:** administrador.
 
 **Precondicao:** administrador autenticado, com a lista de usuarios carregada.
 

@@ -1,6 +1,6 @@
-# 5. Desativar usuario
+# 5. Desativar usuario - Administrador
 
-**Ator:** administrador.
+**Atores:** administrador.
 
 **Precondicao:** administrador autenticado, com um usuario ativo selecionado
 na lista.

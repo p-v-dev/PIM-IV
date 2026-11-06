@@ -49,6 +49,10 @@ export function buscarTentativas(examId, token = getToken()) {
   return request(`/exams/${encodeURIComponent(examId)}/attempts`, {}, token);
 }
 
+export function buscarLeaderboard(token = getToken()) {
+  return request('/leaderboard', {}, token);
+}
+
 export function desativarAvaliacao(id, token = getToken()) {
   return request(`/exams/${encodeURIComponent(id)}/deactivate`, { method: 'PATCH' }, token);
 }

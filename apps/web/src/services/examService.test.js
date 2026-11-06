@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, test } from 'node:test';
-import { buscarMinhasAvaliacoes, buscarQuestoes, buscarTentativas, criarAvaliacao, buscarAvaliacao, desativarAvaliacao, enviarRespostas, buscarHistorico } from './examService.js';
+import { buscarLeaderboard, buscarMinhasAvaliacoes, buscarQuestoes, buscarTentativas, criarAvaliacao, buscarAvaliacao, desativarAvaliacao, enviarRespostas, buscarHistorico } from './examService.js';
 
 const originalFetch = globalThis.fetch;
 const input = () => ({ title: ' Title ', description: ' Description ', deadline: new Date(Date.now() + 86400000).toISOString(), questionIds: ['question-id'] });
@@ -29,6 +29,17 @@ test('loads attempts only for the selected exam with Bearer authentication', asy
     return Response.json(attempts);
   };
   assert.deepEqual(await buscarTentativas('exam-id'), attempts);
+});
+
+test('loads the leaderboard with the authenticated users session', async () => {
+  const ranking = [{ studentId: 'student-id', name: 'Ana', points: 70 }];
+  globalThis.fetch = async (path, options) => {
+    assert.equal(path, '/leaderboard');
+    assert.equal(options.headers.Authorization, 'Bearer token');
+    assert.equal(options.body, undefined);
+    return Response.json(ranking);
+  };
+  assert.deepEqual(await buscarLeaderboard(), ranking);
 });
 
 test('deactivates an exam using its real ID and the teacher session', async () => {

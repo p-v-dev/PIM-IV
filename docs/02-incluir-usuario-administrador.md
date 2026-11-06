@@ -1,6 +1,6 @@
-# 2. Incluir usuario
+# 2. Incluir usuario - Administrador
 
-**Ator:** administrador.
+**Atores:** administrador.
 
 **Precondicao:** administrador autenticado, com a tela principal aberta.
 

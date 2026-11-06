@@ -1,6 +1,6 @@
-# 9. Checar tentativas dos alunos
+# 9. Checar tentativas dos alunos - Professor
 
-**Ator:** professor (`teacher`). **Frontend:** somente web.
+**Atores:** professor (`teacher`). **Frontend:** somente web.
 
 **Precondicao do fluxo real:** professor autenticado e ativo, consultando uma
 avaliacao de sua autoria. A avaliacao pode estar vencida ou desativada.
@@ -26,7 +26,7 @@ O registro abaixo descreve a demonstracao local existente antes da integracao.
 
 ## O que precisa fazer
 
-1. Usar autenticacao e lista propria de avaliacoes propostas no [caso 8](08-criar-avaliacao.md).
+1. Usar autenticacao e lista propria de avaliacoes propostas no [caso 8](08-criar-avaliacao-professor.md).
 2. Expor consulta de tentativas somente para o professor proprietario da avaliacao.
 3. Substituir a tabela fixa por resultados dessa consulta, com carregamento,
    erro, sessao nao autorizada e estado sem tentativas.

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
 import { logout } from "../services/authService.js";
-import { buscarMinhasAvaliacoes, buscarQuestoes, buscarTentativas, criarAvaliacao, desativarAvaliacao } from "../services/examService.js";
+import { buscarLeaderboard, buscarMinhasAvaliacoes, buscarQuestoes, buscarTentativas, criarAvaliacao, desativarAvaliacao } from "../services/examService.js";
 import EvaluationCard from "../components/EvaluationCard";
 
 function Icon({ name, size = 18 }) {
@@ -171,6 +171,9 @@ function Professor() {
   const [avaliacaoParaDesativar, setAvaliacaoParaDesativar] = useState(null);
   const [desativando, setDesativando] = useState(false);
   const [erroDesativacao, setErroDesativacao] = useState("");
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [carregandoLeaderboard, setCarregandoLeaderboard] = useState(false);
+  const [erroLeaderboard, setErroLeaderboard] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -206,6 +209,7 @@ function Professor() {
     if (salvando) return;
     setPagina(novaPagina);
     setModoCriacao(false);
+    if (novaPagina === "leaderboard") carregarLeaderboard();
   };
 
   const abrirCriacao = () => {
@@ -232,6 +236,23 @@ function Professor() {
       }
     } finally {
       if (tentativasRequest.current === requestId) setCarregandoTentativas(false);
+    }
+  };
+
+  const carregarLeaderboard = async () => {
+    setCarregandoLeaderboard(true);
+    setErroLeaderboard("");
+    try {
+      setLeaderboard(await buscarLeaderboard());
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) {
+        logout();
+        navigate("/login", { replace: true });
+      } else {
+        setErroLeaderboard(error instanceof TypeError ? "Não foi possível conectar à API. Tente novamente." : error.message);
+      }
+    } finally {
+      setCarregandoLeaderboard(false);
     }
   };
 
@@ -484,7 +505,10 @@ function Professor() {
         {pagina === "leaderboard" && (
           <section>
             <div className="mb-5 rounded-[24px] bg-white p-7 shadow-[0_12px_32px_rgba(57,49,122,0.1)]"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff0d4] text-[#e49a17]"><Icon name="trophy" size={23} /></div><div><p className="text-xs font-semibold uppercase tracking-wide text-[#7665e8]">desempenho</p><h1 className="text-2xl font-bold">Leaderboard</h1></div></div><p className="mt-3 text-sm text-gray-500">Acompanhe o desempenho dos alunos nas avaliações.</p></div>
-            <div className="overflow-hidden rounded-[22px] bg-white shadow-[0_10px_28px_rgba(57,49,122,0.1)]">{[["Maria Silva", "9,4"], ["Ana Oliveira", "9,1"], ["João Santos", "8,7"], ["Carlos Souza", "7,8"]].map((aluno, index) => <div key={aluno[0]} className="flex items-center justify-between border-b border-gray-100 px-6 py-5 transition hover:bg-[#faf9ff]"><div className="flex items-center gap-4"><span className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${index === 0 ? "bg-[#fff0d4] text-[#d8900f]" : index === 1 ? "bg-[#eeeaff] text-[#7665e8]" : "bg-gray-100 text-gray-500"}`}>{index + 1}</span><div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#8a79ef] to-[#6958d9] text-xs font-bold text-white">{aluno[0].split(" ").map((nome) => nome[0]).join("")}</div><span className="font-semibold">{aluno[0]}</span></div><span className="rounded-full bg-[#eeeaff] px-3 py-1.5 text-sm font-bold text-[#6b59df]">{aluno[1]}</span></div>)}</div>
+            {carregandoLeaderboard && <p role="status" className="rounded-xl bg-white p-5">Carregando ranking...</p>}
+            {erroLeaderboard && <div role="alert" className="rounded-xl bg-white p-5"><p>{erroLeaderboard}</p><button type="button" onClick={carregarLeaderboard} className="mt-3 font-semibold text-[#7665e8]">Tentar novamente</button></div>}
+            {!carregandoLeaderboard && !erroLeaderboard && leaderboard.length === 0 && <p className="rounded-xl bg-white p-5">Ainda não há alunos no ranking.</p>}
+            {!carregandoLeaderboard && !erroLeaderboard && leaderboard.length > 0 && <div className="overflow-hidden rounded-[22px] bg-white shadow-[0_10px_28px_rgba(57,49,122,0.1)]">{leaderboard.map((aluno, index) => <div key={aluno.studentId} className="flex items-center justify-between border-b border-gray-100 px-6 py-5 transition hover:bg-[#faf9ff]"><div className="flex items-center gap-4"><span className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${index === 0 ? "bg-[#fff0d4] text-[#d8900f]" : index === 1 ? "bg-[#eeeaff] text-[#7665e8]" : "bg-gray-100 text-gray-500"}`}>{index + 1}</span><div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#8a79ef] to-[#6958d9] text-xs font-bold text-white">{aluno.name.split(" ").map((nome) => nome[0]).join("")}</div><span className="font-semibold">{aluno.name}</span></div><span className="rounded-full bg-[#eeeaff] px-3 py-1.5 text-sm font-bold text-[#6b59df]">{aluno.points} pts</span></div>)}</div>}
           </section>
         )}
 

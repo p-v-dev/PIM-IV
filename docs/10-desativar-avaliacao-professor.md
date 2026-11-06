@@ -1,6 +1,6 @@
-# 10. Desativar avaliacao
+# 10. Desativar avaliacao - Professor
 
-**Ator:** professor (`teacher`). **Frontend:** somente web.
+**Atores:** professor (`teacher`). **Frontend:** somente web.
 
 **Precondicao do fluxo real:** professor autenticado e ativo, selecionando uma
 avaliacao de sua autoria.
@@ -30,7 +30,7 @@ O registro abaixo descreve a tela e a API antes da integracao.
 
 ## O que precisa fazer
 
-1. Reutilizar autenticacao e lista propria do [caso 8](08-criar-avaliacao.md).
+1. Reutilizar autenticacao e lista propria do [caso 8](08-criar-avaliacao-professor.md).
 2. Guardar disponibilidade ativa/inativa em `Exam` e oferecer uma operacao
    exclusiva do professor proprietario, sem excluir avaliacao nem tentativas.
 3. Trocar Excluir por Desativar na interface, manter confirmacao e mostrar o
@@ -189,4 +189,4 @@ sequenceDiagram
 - `apps/server/src/exam/exam.entity.ts`, `exam.controller.ts`, `exam.service.ts:33-35`
 - `apps/server/src/attempt/attempt.service.ts:14-24`, `attempt.entity.ts`
 - `apps/server/src/app.module.ts:13-22`
-- [Fazer avaliacao](06-fazer-avaliacao.md), [Consultar avaliacoes realizadas](07-consultar-avaliacoes-realizadas.md)
+- [Fazer avaliacao](06-fazer-avaliacao-aluno.md), [Consultar avaliacoes realizadas](07-consultar-avaliacoes-realizadas-aluno.md)

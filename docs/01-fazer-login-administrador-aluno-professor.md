@@ -1,4 +1,4 @@
-# 1. Fazer login
+# 1. Fazer login - Administrador, aluno e professor
 
 **Atores:** administrador no desktop; aluno (`student`) e professor (`teacher`) na web.
 

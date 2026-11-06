@@ -1,6 +1,6 @@
-# 6. Fazer avaliacao
+# 6. Fazer avaliacao - Aluno
 
-**Ator:** aluno (`student`). **Frontends:** web e mobile.
+**Atores:** aluno (`student`). **Frontends:** web e mobile.
 
 **Precondicao do fluxo real:** aluno autenticado e ativo, avaliacao dentro do
 prazo e ainda nao respondida por ele. A autenticacao web usa a API real.
@@ -109,7 +109,7 @@ um metodo `findForStudent(id)` em `ExamService`. Consultar a avaliacao pelo ID,
 validar existencia e prazo e usar `QuestionService.findByIds` ja existente.
 Preservar a ordem de `questionIds` e rejeitar conteudo com questoes ausentes.
 
-Ao implementar a desativacao proposta no [caso 10](10-desativar-avaliacao.md),
+Ao implementar a desativacao proposta no [caso 10](10-desativar-avaliacao-professor.md),
 exigir tambem `isActive = true` na listagem, nesta consulta individual e no
 envio de tentativas. O campo ainda nao existe; essa e uma dependencia proposta,
 nao uma validacao ja implementada. Declarar a rota estatica `/exams/mine` do
@@ -273,7 +273,7 @@ sequenceDiagram
 - Resposta de consulta e bundle frontend nao contem o gabarito real.
 - Aluno autenticado envia todas as respostas e recebe acertos/pontos da API.
 - A tentativa aparece no banco e no historico descrito em [Consultar avaliacoes
-  realizadas](07-consultar-avaliacoes-realizadas.md) depois de sua implementacao.
+  realizadas](07-consultar-avaliacoes-realizadas-aluno.md) depois de sua implementacao.
 - Envio incompleto, repetido, fora do prazo e acesso sem permissao nao geram
   tentativa valida; erro de conexao nao apaga respostas da tela.
 
