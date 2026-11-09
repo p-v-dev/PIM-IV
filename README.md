@@ -32,7 +32,7 @@ Processos de avaliação costumam ficar fragmentados entre planilhas, formulári
 
 ### Planejadas
 
-- Aplicação mobile. O diretório `apps/mobile` atualmente contém apenas um arquivo preparatório vazio, portanto não há aplicativo mobile funcional neste momento.
+- Aplicação mobile. `apps/mobile` contém a estrutura inicial Expo/React Native exclusiva para alunos, ainda sem fluxos ou integração com a API.
 - Evolução das interfaces web para consumo da API nos fluxos completos de professor e aluno.
 - Cadastro público, edição de avaliações e outras capacidades que não fazem parte do escopo implementado atual.
 
@@ -43,7 +43,7 @@ Processos de avaliação costumam ficar fragmentados entre planilhas, formulári
 | `apps/server` | NestJS, TypeScript, TypeORM, SQL Server, JWT, Swagger | API, regras de negócio, autenticação e persistência |
 | `apps/web` | React 19, Vite, React Router, Tailwind CSS, shadcn/ui | Interface web em desenvolvimento |
 | `apps/desktop` | C#/.NET 10, Windows Forms, `HttpClient`, MSTest | Operação administrativa em Windows |
-| `apps/mobile` | Planejado | Não implementado |
+| `apps/mobile` | Expo, React Native | Estrutura inicial para alunos; fluxos não implementados |
 
 ## Arquitetura
 
@@ -66,7 +66,7 @@ apps/
   server/       API NestJS e testes Vitest
   web/          Interface React/Vite
   desktop/      Aplicação administrativa WinForms e testes MSTest
-  mobile/       Espaço reservado para a futura aplicação mobile
+  mobile/       Aplicação Expo/React Native inicial para alunos
 ```
 
 - `apps/server/src/auth`: login, JWT, papéis e operações administrativas.
@@ -129,6 +129,16 @@ $env:EDUQUEST_API_URL = "https://sua-api.example"
 dotnet run --project src/EduQuest.Admin.Desktop
 ```
 
+### Aplicação mobile
+
+```bash
+cd apps/mobile
+npm install
+npm start
+```
+
+O aplicativo Expo atual e exclusivo para alunos e ainda nao consome a API.
+
 ## Testes e verificações
 
 ### Servidor
@@ -164,7 +174,7 @@ npm run build
 
 ## Status atual
 
-O backend possui os principais fluxos de autenticação, usuários, questões, avaliações e tentativas implementados e testados em nível unitário. A aplicação administrativa desktop já executa login e operações de usuários pela API. A web possui login de aluno e professor e proteção de rotas, mas ainda não representa uma experiência completa de produto. A aplicação mobile permanece planejada.
+O backend possui os principais fluxos de autenticação, usuários, questões, avaliações e tentativas implementados e testados em nível unitário. A aplicação administrativa desktop já executa login e operações de usuários pela API. A web possui login de aluno e professor e proteção de rotas, mas ainda não representa uma experiência completa de produto. A aplicação mobile possui apenas a estrutura inicial exclusiva para alunos.
 
 ## Documentação relacionada
 
