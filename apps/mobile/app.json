@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "EduQuest Aluno",
+    "slug": "eduquest-aluno",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.eduquest.aluno"
+    },
+    "ios": {
+      "bundleIdentifier": "com.eduquest.aluno"
+    }
+  }
+}
