@@ -1,6 +1,6 @@
 # DER - EduQuest
 
-Modelo fisico derivado das entidades TypeORM atuais em `apps/server/src`.
+Modelo relacional derivado das entidades TypeORM atuais em `apps/server/src`.
 
 ```mermaid
 erDiagram
@@ -21,7 +21,7 @@ erDiagram
     questions {
         uuid id PK
         varchar prompt UK
-        simple_json options
+        json options "simple-json"
         int correctOptionIndex
     }
 
@@ -31,16 +31,16 @@ erDiagram
         varchar title
         varchar description
         datetime2 deadline
-        simple_json questionIds
+        json questionIds "simple-json"
         boolean isActive "default true"
         datetime2 createdAt
     }
 
     attempts {
         uuid id PK
-        uuid studentId "referencia logica users.id"
-        uuid examId "referencia logica exams.id"
-        simple_json answers
+        uuid studentId "UK composta; referencia logica users.id"
+        uuid examId "UK composta; referencia logica exams.id"
+        json answers "simple-json"
         int score
         int totalQuestions
         datetime2 createdAt
@@ -56,7 +56,17 @@ erDiagram
 | `exams` | PK `id` |
 | `attempts` | PK `id`; UNIQUE composto (`studentId`, `examId`) |
 
+A `UNIQUE` de `attempts` e uma unica restricao composta, nao duas restricoes
+independentes. Ela permite somente uma tentativa de cada aluno por avaliacao.
+
+## Estrutura de `answers`
+
+`attempts.answers` e JSON, mapeado pela entidade como `simple-json`, contendo
+uma lista de objetos no formato `[{ questionId, selectedOptionIndex }]`.
+`questionId` identifica a questao respondida e `selectedOptionIndex` identifica
+a opcao selecionada para essa mesma questao.
+
 `teacherId`, `studentId` e `examId` sao colunas UUID usadas como referencias
 logicas pela aplicacao. As entidades TypeORM nao declaram `@ManyToOne` ou
 `@JoinColumn`; portanto, o esquema atual nao cria chaves estrangeiras SQL para
-essas colunas. `questionIds` e `answers` sao colunas `simple-json`.
+essas colunas. `questionIds` tambem e mapeado como `simple-json`.
