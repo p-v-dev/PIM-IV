@@ -19,7 +19,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
       options: { trustServerCertificate: true }, // ponytail: local SQL Server uses a self-signed certificate.
-      synchronize: process.env.NODE_ENV === 'development',
+      // shortcut: production schema sync is for the presentation database only; use migrations before persistent use.
+      synchronize:
+        process.env.NODE_ENV === 'development' || process.env.DB_SYNCHRONIZE === 'true',
     }),
     UsersModule,
     AuthModule,

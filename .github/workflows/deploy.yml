@@ -1,0 +1,66 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/server/package-lock.json
+            apps/web/package-lock.json
+
+      - name: Validate server
+        working-directory: apps/server
+        run: |
+          npm ci
+          npm run lint
+          npm test
+          npm run build
+
+      - name: Build web
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Package application
+        run: |
+          mkdir package
+          mkdir package/public
+          cp apps/server/package.json apps/server/package-lock.json package/
+          cp -R apps/server/dist package/
+          cp -R apps/web/dist/. package/public/
+          npm ci --omit=dev --prefix package
+          zip -qr app.zip package/*
+
+      - name: Configure application
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          app-settings-json: >-
+            [{"name":"NODE_ENV","value":"production","slotSetting":false},{"name":"DB_SYNCHRONIZE","value":"true","slotSetting":false},{"name":"DB_HOST","value":"${{ secrets.DB_HOST }}","slotSetting":false},{"name":"DB_PORT","value":"1433","slotSetting":false},{"name":"DB_NAME","value":"${{ secrets.DB_NAME }}","slotSetting":false},{"name":"DB_USER","value":"${{ secrets.DB_USER }}","slotSetting":false},{"name":"DB_PASS","value":"${{ secrets.DB_PASS }}","slotSetting":false},{"name":"JWT_SECRET","value":"${{ secrets.JWT_SECRET }}","slotSetting":false},{"name":"ADMIN_NAME","value":"${{ secrets.ADMIN_NAME }}","slotSetting":false},{"name":"ADMIN_EMAIL","value":"${{ secrets.ADMIN_EMAIL }}","slotSetting":false},{"name":"ADMIN_PASSWORD","value":"${{ secrets.ADMIN_PASSWORD }}","slotSetting":false}]
+          general-settings-json: >-
+            {"alwaysOn":true,"appCommandLine":"node dist/main.js"}
+
+      - name: Deploy application
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: app.zip
