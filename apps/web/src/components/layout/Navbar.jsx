@@ -28,7 +28,7 @@ function Navbar() {
   const [menuAberto, setMenuAberto] = useState(false);
   const [confirmarSaida, setConfirmarSaida] = useState(false);
   const [altoContraste, setAltoContraste] = useState(() =>
-    document.documentElement.classList.contains("alto-contraste")
+    localStorage.getItem("eduquest-alto-contraste") === "true"
   );
   const menuRef = useRef(null);
 
@@ -58,6 +58,11 @@ function Navbar() {
     document.documentElement.classList.toggle(
       "alto-contraste",
       altoContraste
+    );
+
+    localStorage.setItem(
+      "eduquest-alto-contraste",
+      String(altoContraste)
     );
   }, [altoContraste]);
 

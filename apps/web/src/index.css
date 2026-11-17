@@ -131,13 +131,36 @@
   }
 }
 
-/* Modo de alto contraste para acessibilidade */
+
+/* Acessibilidade: foco visível na navegação */
+:focus-visible {
+  outline: 2px solid #4c3bc4;
+  outline-offset: 2px;
+}
+
+/* Remove o contorno exagerado dos campos */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  box-shadow: none;
+}
+
+/* Modo de alto contraste */
 html.alto-contraste body {
   background-color: #000 !important;
   color: #fff !important;
 }
 
-html.alto-contraste body * {
+html.alto-contraste body main,
+html.alto-contraste body section,
+html.alto-contraste body article,
+html.alto-contraste body nav,
+html.alto-contraste body header,
+html.alto-contraste body footer,
+html.alto-contraste body [role="menu"] {
+  background-color: #000 !important;
+  color: #fff !important;
   border-color: #fff !important;
 }
 
@@ -146,36 +169,44 @@ html.alto-contraste body h1,
 html.alto-contraste body h2,
 html.alto-contraste body h3,
 html.alto-contraste body span,
-html.alto-contraste body label {
+html.alto-contraste body label,
+html.alto-contraste body li {
   color: #fff !important;
 }
 
 html.alto-contraste body a,
 html.alto-contraste body button {
-  outline-color: #ff0;
+  color: #ff0 !important;
+  border-color: #ff0 !important;
 }
 
-html.alto-contraste body a:focus-visible,
-html.alto-contraste body button:focus-visible,
-html.alto-contraste body input:focus-visible {
+html.alto-contraste body input,
+html.alto-contraste body textarea,
+html.alto-contraste body select {
+  background-color: #000 !important;
+  color: #fff !important;
+  border: 1px solid #fff !important;
+}
+
+html.alto-contraste body input::placeholder,
+html.alto-contraste body textarea::placeholder {
+  color: #ccc !important;
+}
+
+html.alto-contraste :focus-visible {
   outline: 3px solid #ff0 !important;
   outline-offset: 3px;
 }
 
-html.alto-contraste body nav,
-html.alto-contraste body section,
-html.alto-contraste body article,
-html.alto-contraste body main,
-html.alto-contraste body div {
-  background-color: #000 !important;
-  color: #fff !important;
-}
+/* Respeita a preferência por menos animações */
+@media (prefers-reduced-motion: reduce) {
 
-html.alto-contraste body button,
-html.alto-contraste body a {
-  text-decoration-color: #ff0;
-}
-
-html.alto-contraste body svg {
-  color: #ff0;
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

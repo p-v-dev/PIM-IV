@@ -10,6 +10,7 @@ import Login from "./pages/auth/Login.jsx";
 import StudentHome from "./pages/student/StudentHome.jsx";
 import Professor from "./pages/Professor.jsx";
 import { requireUser } from "./services/authLoader.js";
+import VLibras from "./components/accessibility/VLibras.jsx";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -45,6 +46,9 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <>
+      <RouterProvider router={router} />
+      <VLibras />
+    </>
   </StrictMode>,
 );
