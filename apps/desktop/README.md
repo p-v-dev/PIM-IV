@@ -12,7 +12,7 @@ Aplicação administrativa para Windows, construída com C#/.NET 10 e Windows Fo
 - Desativação de usuários com confirmação.
 - Exibição de usuários ativos e inativos.
 - Encerramento da sessão quando a API retorna `401` ou `403`.
-- URL da API configurável por `EDUQUEST_API_URL`.
+- URL da API configurável por `EDUQUEST_API_URL` ou `appsettings.json`.
 
 ## Requisitos
 
@@ -28,7 +28,7 @@ Na pasta `apps/desktop`:
 dotnet run --project src/EduQuest.Admin.Desktop
 ```
 
-Por padrão, a aplicação usa `http://localhost:3000`. Para alterar a URL durante uma sessão:
+Ao iniciar, a aplicação usa `EDUQUEST_API_URL` se a variável não estiver vazia, depois a propriedade `ApiUrl` do `appsettings.json` ao lado do executável e, por fim, `http://localhost:3000`. Para definir a URL no PowerShell antes de iniciar:
 
 ```powershell
 $env:EDUQUEST_API_URL = "https://sua-api.example"
@@ -36,6 +36,19 @@ dotnet run --project src/EduQuest.Admin.Desktop
 ```
 
 Nenhuma credencial é persistida pelo projeto. O token permanece apenas na memória enquanto a aplicação está aberta.
+
+## Instalador Windows x64
+
+Na raiz do repositório, com o SDK .NET 10 e Inno Setup 6.3 ou mais recente (`ISCC.exe` no `PATH`):
+
+```powershell
+$publishDir = Join-Path $PWD.Path 'apps\desktop\src\EduQuest.Admin.Desktop\bin\installer-publish'
+$outputDir = Join-Path $PWD.Path 'apps\desktop\src\EduQuest.Admin.Desktop\bin\installer-output'
+dotnet publish apps/desktop/src/EduQuest.Admin.Desktop -c Release -r win-x64 --self-contained true -o "$publishDir"
+ISCC.exe '/DAppVersion=1.2.3' "/DPublishDir=$publishDir" "/DOutputDir=$outputDir" apps/desktop/installer/EduQuest.iss
+```
+
+O arquivo `EduQuest-Admin-Windows-x64.exe` fica em `$outputDir`. Ele instala para o usuário atual, sem exigir administrador ou .NET pré-instalado, com atalho no menu Iniciar e atalho opcional na área de trabalho. Para empacotar outra URL padrão, ajuste `ApiUrl` no `appsettings.json` em `$publishDir` antes de chamar `ISCC.exe`.
 
 ## Testes automatizados
 
@@ -75,4 +88,6 @@ tests/
 
 ## Limites atuais
 
-A aplicação é um cliente administrativo para as rotas de autenticação e usuários já disponíveis na API. Publicação para Windows, validação contra uma API Azure e testes manuais completos de integração ainda são etapas pendentes do roadmap.
+A aplicação é um cliente administrativo para as rotas de autenticação e usuários já disponíveis na API. A validação contra uma API Azure e os testes manuais completos de integração ainda estão pendentes.
+
+Para baixar ou publicar uma versão Windows, veja [Distribuição do EduQuest](../../docs/distribuicao.md).

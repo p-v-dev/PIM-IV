@@ -1,0 +1,148 @@
+name: Release Windows and Android
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-clients-${{ github.ref }}
+
+env:
+  EDUQUEST_RELEASE_API_URL: ${{ vars.EDUQUEST_API_URL || 'https://eduquest-a7atg8arcybzetat.brazilsouth-01.azurewebsites.net' }}
+
+jobs:
+  metadata:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Validate release inputs
+        id: release
+        shell: bash
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ || "$GITHUB_REF_NAME" == v0.0.0 ]]; then
+            echo 'Use a release tag such as v1.2.3.' >&2
+            exit 1
+          fi
+          node -e 'const raw = process.env.EDUQUEST_RELEASE_API_URL; const url = new URL(raw); if (url.protocol !== "https:" || (raw !== url.origin && raw !== url.origin + "/")) throw new Error("Use an HTTPS API origin without credentials, paths or query parameters");'
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: metadata
+    runs-on: windows-2025
+    env:
+      RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Test Windows client
+        run: dotnet test apps/desktop/EduQuest.Admin.Desktop.sln -c Release
+      - name: Publish Windows client and build installer
+        shell: pwsh
+        run: |
+          $publish = Join-Path $env:RUNNER_TEMP 'eduquest-publish'
+          $output = Join-Path $env:RUNNER_TEMP 'eduquest-windows'
+          dotnet publish apps/desktop/src/EduQuest.Admin.Desktop -c Release -r win-x64 --self-contained true -p:Version=$env:RELEASE_VERSION -o $publish
+          if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
+          @{ ApiUrl = $env:EDUQUEST_RELEASE_API_URL } | ConvertTo-Json | Set-Content (Join-Path $publish 'appsettings.json') -Encoding utf8NoBOM
+
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path -LiteralPath $iscc)) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+          }
+          & $iscc "/DAppVersion=$env:RELEASE_VERSION" "/DPublishDir=$publish" "/DOutputDir=$output" 'apps/desktop/installer/EduQuest.iss'
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eduquest-windows
+          path: ${{ runner.temp }}/eduquest-windows/EduQuest-Admin-Windows-x64.exe
+          if-no-files-found: error
+
+  android:
+    needs: metadata
+    runs-on: ubuntu-24.04
+    environment: PROD
+    env:
+      EDUQUEST_RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+      EXPO_PUBLIC_API_URL: ${{ vars.EDUQUEST_API_URL || 'https://eduquest-a7atg8arcybzetat.brazilsouth-01.azurewebsites.net' }}
+      EXPO_PUBLIC_DEMO_MODE: 'false'
+      EXPO_NO_DOTENV: '1'
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install and test Android client
+        run: |
+          npx --yes --package=npm@11.17.0 npm ci
+          npm test
+      - name: Build Android release
+        run: |
+          sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006'
+          npx --no-install expo prebuild --platform android --no-install
+          cd android
+          ./gradlew :app:assembleRelease --no-daemon
+      - name: Sign and verify APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          : "${ANDROID_KEYSTORE_BASE64:?Set ANDROID_KEYSTORE_BASE64 in Actions secrets}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?Set ANDROID_KEYSTORE_PASSWORD in Actions secrets}"
+          : "${ANDROID_KEY_ALIAS:?Set ANDROID_KEY_ALIAS in Actions secrets}"
+          : "${ANDROID_KEY_PASSWORD:?Set ANDROID_KEY_PASSWORD in Actions secrets}"
+          key=$(mktemp)
+          trap 'rm -f "$key"' EXIT
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$key"
+          signer="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          if [[ ! -x "$signer" ]]; then sdkmanager 'build-tools;36.0.0'; fi
+          shopt -s nullglob
+          apks=(android/app/build/outputs/apk/release/*.apk)
+          [[ ${#apks[@]} -eq 1 ]] || { echo 'Expected one release APK' >&2; exit 1; }
+          "$signer" sign --ks "$key" --ks-key-alias "$ANDROID_KEY_ALIAS" --ks-pass env:ANDROID_KEYSTORE_PASSWORD --key-pass env:ANDROID_KEY_PASSWORD --out "$RUNNER_TEMP/EduQuest-Aluno-Android.apk" "${apks[0]}"
+          "$signer" verify "$RUNNER_TEMP/EduQuest-Aluno-Android.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eduquest-android
+          path: ${{ runner.temp }}/EduQuest-Aluno-Android.apk
+          if-no-files-found: error
+
+  release:
+    needs: [windows, android]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eduquest-*
+          path: dist
+          merge-multiple: true
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes \
+            dist/EduQuest-Admin-Windows-x64.exe dist/EduQuest-Aluno-Android.apk
