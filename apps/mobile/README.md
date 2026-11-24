@@ -38,3 +38,5 @@ npm test
 
 Os testes Vitest verificam os contratos HTTP de sessao e avaliacoes, incluindo
 token Bearer, erros de autorizacao e falha de rede.
+
+Para baixar ou publicar uma versao Android, veja [Distribuicao do EduQuest](../../docs/distribuicao.md).

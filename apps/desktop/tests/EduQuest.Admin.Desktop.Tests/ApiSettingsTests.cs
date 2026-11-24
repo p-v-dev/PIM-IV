@@ -47,4 +47,47 @@ public class ApiSettingsTests
 
         Assert.AreEqual("http://localhost:3000", ApiSettings.GetApiUrl());
     }
+
+    [TestMethod]
+    [DataRow(null, "https://file.example.test")]
+    [DataRow("   ", "https://file.example.test")]
+    [DataRow(" https://env.example.test/// ", "https://env.example.test")]
+    public void ResolvesApiUrlFromEnvironmentOrSettingsFile(string? value, string expected)
+    {
+        Environment.SetEnvironmentVariable(EnvironmentVariable, value);
+        WithSettingsFile("""{ "ApiUrl": " https://file.example.test/// " }""", expected);
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("{}")]
+    [DataRow("""{ "ApiUrl": "   " }""")]
+    [DataRow("{ invalid json")]
+    public void UsesLocalhostWhenSettingsFileHasNoUsableUrl(string? contents)
+    {
+        Environment.SetEnvironmentVariable(EnvironmentVariable, null);
+        WithSettingsFile(contents, "http://localhost:3000");
+    }
+
+    private static void WithSettingsFile(string? contents, string expected)
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+        var original = File.Exists(path) ? File.ReadAllBytes(path) : null;
+        try
+        {
+            if (contents is null)
+                File.Delete(path);
+            else
+                File.WriteAllText(path, contents);
+
+            Assert.AreEqual(expected, ApiSettings.GetApiUrl());
+        }
+        finally
+        {
+            if (original is null)
+                File.Delete(path);
+            else
+                File.WriteAllBytes(path, original);
+        }
+    }
 }
