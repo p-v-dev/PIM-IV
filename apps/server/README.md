@@ -57,9 +57,11 @@ As rotas usam `JwtAuthGuard` para validar o token e `RolesGuard` para restringir
 | `GET` | `/questions` | `teacher` | Lista as questões disponíveis |
 | `POST` | `/exams` | `teacher` | Cria uma avaliação com questões existentes |
 | `GET` | `/exams/mine` | `teacher` | Lista somente as avaliações do professor autenticado, incluindo vencidas |
+| `PATCH` | `/exams/:id/deactivate` | `teacher` | Desativa uma avaliação do próprio professor |
 | `GET` | `/exams` | `student` | Lista avaliações ainda dentro do prazo |
 | `GET` | `/exams/:id` | `student` | Retorna o conteúdo de uma avaliação dentro do prazo, sem gabarito |
 | `POST` | `/exams/:examId/attempts` | `student` | Envia respostas e registra a pontuação |
+| `GET` | `/exams/:examId/attempts` | `teacher` | Lista tentativas de uma avaliação do próprio professor |
 | `GET` | `/attempts/me` | `student` | Consulta o próprio histórico de avaliações realizadas, incluindo vencidas |
 | `GET` | `/leaderboard` | `teacher`, `student` | Consulta o ranking dos alunos |
 
@@ -109,7 +111,7 @@ ADMIN_EMAIL=admin@eduquest.local
 ADMIN_PASSWORD=Admin123!
 ```
 
-O Compose inicia a API na porta `3000` e o SQL Server na porta `1433`. O arquivo `.env` não deve conter credenciais de produção nem ser commitado.
+O Compose inicia a web na porta `5173`, a API na porta `3000` e o SQL Server na porta `1433`. O arquivo `.env` não deve conter credenciais de produção nem ser commitado.
 
 ### Execução direta
 
@@ -130,6 +132,9 @@ DB_PASS=senha-local
 DB_NAME=eduquest-db
 JWT_SECRET=local-development-secret
 PORT=3000
+ADMIN_NAME=Administrador
+ADMIN_EMAIL=admin@eduquest.local
+ADMIN_PASSWORD=Admin123!
 ```
 
 ## Comandos

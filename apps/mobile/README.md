@@ -3,13 +3,14 @@
 Aplicativo React Native, via Expo, exclusivo para alunos. Ele porta os fluxos
 de login, avaliacoes, desempenho, ranking e FAQ da area de aluno da web.
 
-O plano de port 1:1 da area de aluno da web esta em [ROADMAP.md](ROADMAP.md).
+O plano original de port 1:1 da area de aluno da web esta em [ROADMAP.md](ROADMAP.md); seus itens de status registram o planejamento inicial.
 
 ## Executar
 
 Na pasta `apps/mobile`:
 
 ```bash
+cp .env.example .env
 npm install
 npm start
 ```
@@ -25,6 +26,9 @@ Defina a URL acessivel pelo dispositivo em `.env`:
 EXPO_PUBLIC_API_URL=http://10.0.2.2:3000
 EXPO_PUBLIC_DEMO_MODE=false
 ```
+
+O endereco `10.0.2.2` aponta para o computador hospedeiro no emulador Android.
+Em um dispositivo fisico, use um endereco da API acessivel pela rede do aparelho.
 
 Para explorar o aplicativo sem API ou login, use
 `EXPO_PUBLIC_DEMO_MODE=true`. O modo local mostra dados ficticios e deve ficar

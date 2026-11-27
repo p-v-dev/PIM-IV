@@ -1,13 +1,13 @@
 # EduQuest Web
 
-Interface web do EduQuest, construída com React e Vite. O módulo está em desenvolvimento e atualmente contém uma interface de professor em `src/pages/Professor.jsx`, componentes visuais reutilizáveis e a configuração inicial de roteamento.
+Interface web do EduQuest, construída com React e Vite, com áreas para alunos e professores integradas à API.
 
 ## Estado atual
 
 - React 19 com Vite.
 - Roteamento inicial configurado com React Router.
 - Estilos com Tailwind CSS e componentes no padrão shadcn/ui.
-- Tela de professor em desenvolvimento.
+- Área de professor em `src/pages/Professor.jsx` e páginas de aluno em `src/pages/student/`.
 - Login de aluno e professor integrado à API, com sessão por aba e logout.
 - Rotas protegidas por perfil confirmado pela API; a entrada `/` direciona para `/aluno` ou `/professor`.
 - A página inicial do aluno consulta avaliações reais.
@@ -15,8 +15,9 @@ Interface web do EduQuest, construída com React e Vite. O módulo está em dese
 - O aluno lista avaliações reais, responde questões sem acesso ao gabarito e recebe a correção e os pontos do servidor.
 - O aluno consulta seu histórico real de avaliações, com notas e resumos calculados a partir dos acertos registrados.
 - O professor consulta as tentativas e desativa suas próprias avaliações.
+- Integração com VLibras para acessibilidade.
 
-O web app ainda não representa uma interface acadêmica completa: autenticação está integrada, mas os demais fluxos possuem dados demonstrativos e integrações pendentes.
+O web app ainda está em evolução e inclui conteúdos demonstrativos em partes da interface.
 
 ## Login de aluno e professor
 
@@ -47,8 +48,8 @@ continua disponível após recarregar a página. Categoria e dificuldade não
 fazem parte do contrato atual.
 
 Falhas no envio preservam os dados para nova tentativa. Erros de sessão
-retornam ao login. Resultados e desativação dos cartões ficam indisponíveis
-até a implementação dos respectivos casos de uso, sem simular exclusão local.
+retornam ao login. O professor também pode consultar tentativas e desativar
+suas próprias avaliações.
 
 ## Fazer avaliação
 
@@ -107,7 +108,6 @@ desenvolvimento, com o código local montado no container.
 As chamadas relativas para `/auth`, `/exams`, `/questions`, `/attempts` e
 `/leaderboard` passam pelo proxy do Vite. No Compose, `API_PROXY_TARGET` aponta
 para `http://backend:3000`; fora do Docker, o padrão é `http://localhost:3000`.
-O proxy não implementa a integração das telas com a API.
 
 ## Verificação
 
@@ -122,7 +122,8 @@ npm test
 ```text
 src/
   components/ui/  componentes de interface reutilizáveis
-  pages/          páginas em desenvolvimento
+  pages/          páginas de autenticação, professor e aluno
+  services/       clientes e testes dos serviços da API
   lib/            utilitários
   App.jsx         entrada da aplicação
   main.jsx        montagem do React e roteamento
@@ -130,5 +131,4 @@ src/
 
 ## Próximos passos
 
-- Conectar consulta de tentativas pelo professor à API.
 - Desenvolver os demais fluxos específicos de professores e alunos.

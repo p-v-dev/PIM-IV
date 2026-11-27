@@ -23,6 +23,8 @@ Processos de avaliação costumam ficar fragmentados entre planilhas, formulári
 - Histórico individual de avaliações realizadas, com título, data, acertos e notas, incluindo avaliações vencidas.
 - Ranking dos alunos com base nas pontuações registradas.
 - Aplicação desktop administrativa com login e gestão de usuários pela API.
+- Aplicativo mobile para alunos com login, avaliações, desempenho, ranking e FAQ.
+- Recursos de acessibilidade na web, incluindo integração com VLibras.
 - Documentação interativa da API com Swagger.
 
 ### Parciais
@@ -32,7 +34,6 @@ Processos de avaliação costumam ficar fragmentados entre planilhas, formulári
 
 ### Planejadas
 
-- Aplicação mobile. `apps/mobile` contém a estrutura inicial Expo/React Native exclusiva para alunos, ainda sem fluxos ou integração com a API.
 - Evolução das interfaces web para consumo da API nos fluxos completos de professor e aluno.
 - Cadastro público, edição de avaliações e outras capacidades que não fazem parte do escopo implementado atual.
 
@@ -43,7 +44,7 @@ Processos de avaliação costumam ficar fragmentados entre planilhas, formulári
 | `apps/server` | NestJS, TypeScript, TypeORM, SQL Server, JWT, Swagger | API, regras de negócio, autenticação e persistência |
 | `apps/web` | React 19, Vite, React Router, Tailwind CSS, shadcn/ui | Interface web em desenvolvimento |
 | `apps/desktop` | C#/.NET 10, Windows Forms, `HttpClient`, MSTest | Operação administrativa em Windows |
-| `apps/mobile` | Expo, React Native | Estrutura inicial para alunos; fluxos não implementados |
+| `apps/mobile` | Expo, React Native | Aplicativo para alunos integrado à API |
 
 ## Arquitetura
 
@@ -51,13 +52,13 @@ Processos de avaliação costumam ficar fragmentados entre planilhas, formulári
 flowchart LR
     Web[Web React/Vite<br/>integracao parcial] --> API[EduQuest API<br/>NestJS/TypeScript]
     Desktop[EduQuest Admin<br/>WinForms/.NET 10] --> API
-    Mobile[Mobile<br/>planejado] -. consumo futuro .-> API
+    Mobile[Mobile Expo<br/>alunos] --> API
     API --> Auth[JWT e papéis]
     API --> Domain[Módulos de usuários<br/>questões, avaliações e tentativas]
     API --> DB[(SQL Server<br/>TypeORM)]
 ```
 
-As aplicações cliente não acessam o banco diretamente. A API concentra autenticação, autorização, validação e persistência; o aplicativo desktop consome suas rotas administrativas e a web já integra autenticação e consulta inicial de avaliações. Os demais fluxos web e o mobile permanecem em evolução.
+As aplicações cliente não acessam o banco diretamente. A API concentra autenticação, autorização, validação e persistência; o desktop consome suas rotas administrativas, enquanto web e mobile integram os fluxos disponíveis para seus respectivos perfis.
 
 ## Organização do repositório
 
@@ -66,7 +67,7 @@ apps/
   server/       API NestJS e testes Vitest
   web/          Interface React/Vite
   desktop/      Aplicação administrativa WinForms e testes MSTest
-  mobile/       Aplicação Expo/React Native inicial para alunos
+  mobile/       Aplicação Expo/React Native para alunos
 ```
 
 - `apps/server/src/auth`: login, JWT, papéis e operações administrativas.
@@ -79,7 +80,7 @@ apps/
 
 ## Execução local
 
-### API com Docker Compose
+### Web e API com Docker Compose
 
 Pré-requisitos: Docker e Docker Compose.
 
@@ -137,7 +138,7 @@ npm install
 npm start
 ```
 
-O aplicativo Expo atual e exclusivo para alunos e ainda nao consome a API.
+O aplicativo é exclusivo para alunos. Configure `EXPO_PUBLIC_API_URL` com um endereço da API acessível pelo dispositivo; consulte o [README mobile](apps/mobile/README.md) para configuração e modo demonstrativo.
 
 ## Testes e verificações
 
@@ -170,15 +171,25 @@ Além dos testes automatizados, o README do desktop descreve os cenários manuai
 cd apps/web
 npm run lint
 npm run build
+npm test
+```
+
+### Mobile
+
+```bash
+cd apps/mobile
+npm test
 ```
 
 ## Status atual
 
-O backend possui os principais fluxos de autenticação, usuários, questões, avaliações e tentativas implementados e testados em nível unitário. A aplicação administrativa desktop já executa login e operações de usuários pela API. A web possui login de aluno e professor e proteção de rotas, mas ainda não representa uma experiência completa de produto. A aplicação mobile possui apenas a estrutura inicial exclusiva para alunos.
+O backend possui os principais fluxos de autenticação, usuários, questões, avaliações e tentativas implementados e testados em nível unitário. O desktop oferece operações administrativas; a web atende alunos e professores; e o mobile oferece os fluxos de aluno integrados à API. As interfaces continuam em evolução.
 
 ## Documentação relacionada
 
 - [Documentação da API](apps/server/README.md)
 - [Aplicação web](apps/web/README.md)
 - [Aplicação desktop](apps/desktop/README.md)
+- [Aplicação mobile](apps/mobile/README.md)
+- [Distribuição para Windows e Android](docs/distribuicao.md)
 - [Documentação técnica](docs/)
